@@ -9,6 +9,7 @@ import { generateCharacterAnchor, callConsistentCharacter } from '@/lib/replicat
 import { uploadImage } from '@/lib/storage'
 import { getTierByNumber } from '@/lib/lexile'
 import { getSupabase } from '@/lib/supabase'
+import { themeContainsProfanity, storyContainsProfanity } from '@/lib/profanity'
 
 export const maxDuration = 300
 
@@ -41,6 +42,20 @@ export async function POST(request: NextRequest) {
   }
 
   const { sessionId, childName, age, tier: tierNumber, theme, readMode, pronouns, sidekick } = parsed.data
+
+  // ── Input gate: profanity check on user-supplied theme ────────────────────
+  try {
+    const themeFlagged = await themeContainsProfanity(theme)
+    if (themeFlagged) {
+      return NextResponse.json(
+        { error: 'The theme you entered isn\'t appropriate for a kids\' book. Please try a different adventure!' },
+        { status: 400 }
+      )
+    }
+  } catch {
+    // Fail open — don't block if the filter API is down
+    console.warn('[generate] Profanity input check failed (continuing)')
+  }
 
   // Server-side free tier enforcement and BYOK gate
   const supabaseForUsage = getSupabase()
@@ -116,6 +131,21 @@ export async function POST(request: NextRequest) {
       { error: 'Story generation failed after 2 attempts. Please try again.' },
       { status: 422 }
     )
+  }
+
+  // ── Output gate: profanity check on generated story text ─────────────────
+  try {
+    const storyFlagged = await storyContainsProfanity(storyJSON)
+    if (storyFlagged) {
+      console.warn('[generate] Profanity detected in generated story — blocking save')
+      return NextResponse.json(
+        { error: 'The generated story contained inappropriate content. Please try again with a different theme.' },
+        { status: 422 }
+      )
+    }
+  } catch {
+    // Fail open — don't block if the filter API is down
+    console.warn('[generate] Profanity output check failed (continuing)')
   }
 
   const supabase = getSupabase()
