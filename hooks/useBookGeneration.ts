@@ -45,7 +45,7 @@ export function useBookGeneration() {
       if (activeUuidRef.current !== uuid) return // stale poll
 
       try {
-        const res = await fetch(`/api/book/${uuid}`)
+       const res = await fetch(`/api/book/${uuid}?t=${Date.now()}`)
 
         if (res.status === 404 || res.status === 410) {
           stopPolling()
