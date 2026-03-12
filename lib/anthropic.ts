@@ -114,14 +114,15 @@ ${tier.tier === 1 ? `
 
 The JSON you return includes a \`character_description\` field. This is the single most important element for visual consistency across all 10 illustrations.
 
-Write it as a precise, concrete visual description (3-5 sentences) covering:
+Write it as a precise, concrete visual description (4-6 sentences) covering:
 - Hair: color, length, and style
 - Skin tone
 - Eyes: color
 - Build and approximate height for age
+- Clothing: a specific, memorable outfit that fits the theme (e.g. "bright yellow rain boots and a blue star-patterned raincoat" for a weather adventure). The outfit must stay IDENTICAL on every page.
 - Any unique distinguishing feature (glasses, freckles, a specific accessory)
 
-Do NOT include clothing in the character_description — clothing is locked separately and injected into image prompts automatically. Do NOT use abstract traits ("looks friendly," "seems adventurous"). Only concrete visuals that an illustrator could draw from.${input.sidekick ? `
+Do NOT use abstract traits ("looks friendly," "seems adventurous"). Only concrete visuals that an illustrator could draw from.${input.sidekick ? `
 - Also include a concrete visual description of ${input.sidekick} — species/type, coloring, size, any distinguishing markings or features.` : ''}
 
 ## IMAGE PROMPTS (SCENE DESCRIPTIONS FOR ILLUSTRATION)

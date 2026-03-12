@@ -196,8 +196,8 @@ async function runTest(label: string, input: BookFormInput) {
 
   // 5. Build image prompts for pages 1 and 10
   section('IMAGE PROMPTS')
-  const imgPrompt1 = buildImagePrompt(mockStory.pages[0].image_prompt, mockStory.character_description, 7)
-  const imgPrompt10 = buildImagePrompt(mockStory.pages[9].image_prompt, mockStory.character_description, 7)
+  const imgPrompt1 = buildImagePrompt(mockStory.pages[0].image_prompt, mockStory.character_description)
+  const imgPrompt10 = buildImagePrompt(mockStory.pages[9].image_prompt, mockStory.character_description)
 
   assert(imgPrompt1.includes(ART_STYLE_ANCHOR), 'page 1 image prompt includes art style anchor')
   assert(imgPrompt10.includes(ART_STYLE_ANCHOR), 'page 10 image prompt includes art style anchor')

@@ -27,25 +27,16 @@ export function getIdeogramKey(req: Request): string {
 }
 
 export const ART_STYLE_ANCHOR =
-  'Digital illustration, warm saturated colors, soft diffused lighting, children\'s picture book style, Studio Ghibli-inspired watercolor textures, slightly rounded character proportions, expressive faces, rich environmental detail, full scene composition'
-
-export const SIGNATURE_OUTFIT =
-  'The child hero wears a bright red hoodie with a small gold star on the chest, dark blue jeans, and blue sneakers with white soles.'
+  'Vintage Disney animation style, smooth hand-drawn lines, warm soft shading, 1950s Disney storybook illustration, rich saturated colors, expressive character faces, painterly backgrounds with soft focus depth, full scene composition, children\'s picture book'
 
 export const NEGATIVE_PROMPT =
-  'photorealistic, 3D render, dark, scary, violent, text, words, letters, watermark, signature, logo, blurry, low quality'
-
-export function buildCharacterAnchor(childAge: number): string {
-  return `The child hero is a Chinese boy, approximately ${childAge} years old, slim build, short straight black hair, warm brown eyes, round friendly face, light skin. ${SIGNATURE_OUTFIT} Consistent character throughout — same face, same hair, same build, same outfit on every page.`
-}
+  'photorealistic, 3D render, CGI, dark, scary, violent, text, words, letters, watermark, signature, logo, blurry, low quality, anime, manga, pixel art, abstract'
 
 export function buildImagePrompt(
   sceneDescription: string,
-  characterDescription: string,
-  childAge: number
+  characterDescription: string
 ): string {
-  const characterAnchor = buildCharacterAnchor(childAge)
-  return `${ART_STYLE_ANCHOR}.\n\n${sceneDescription}\n\n${characterAnchor}\n\n${characterDescription}`
+  return `${ART_STYLE_ANCHOR}.\n\n${sceneDescription}\n\nCharacter details: ${characterDescription}\n\nConsistent character appearance across all pages — same face, same hair, same build, same outfit.`
 }
 
 export async function callIdeogram(
