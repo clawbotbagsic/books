@@ -45,8 +45,27 @@ export function buildPagePrompt(pageImagePrompt: string): string {
   return `${ART_STYLE_PREFIX}. ${pageImagePrompt}`
 }
 
-export function buildAnchorPrompt(characterDescription: string): string {
-  return `${ART_STYLE_PREFIX}. Character reference sheet showing front view, 3/4 view, and side view of the same character, plus facial expressions (happy, surprised, sad) in the top right corner. ${characterDescription}. Full body visible in each view, arms at sides, hands visible, plain cream background. Classic Disney character sheet layout.`
+// CDC 50th-percentile growth data (NHANES) — used to anchor image model proportions
+// Image models ignore written ages; visual proportion cues are required instead.
+// Heights: boys age 3=38in, 4=41in, 5=44in, 6=46in, 7=48in, 8=51in
+//          girls approx 1in shorter at each age
+const CDC_PROPORTIONS: Record<number, { height: string; build: string; face: string }> = {
+  3: { height: '3 feet 2 inches tall (very small toddler)', build: 'very chubby arms and legs, round pot belly, tiny hands and feet', face: 'very large round head (1/4 of total height), huge chubby cheeks, small button nose, wide eyes low on face, very short neck' },
+  4: { height: '3 feet 5 inches tall (small preschooler)', build: 'chubby arms and legs, round belly, small hands', face: 'large round head, chubby cheeks, small nose, wide eyes, short neck' },
+  5: { height: '3 feet 8 inches tall (kindergartner)', build: 'slightly chubby arms, rounded belly, small hands', face: 'large round head (head is large relative to body), chubby cheeks, small nose, wide-set eyes' },
+  6: { height: '3 feet 10 inches tall (first grader)', build: 'lean but still with baby fat, small hands', face: 'round head still large relative to body, full cheeks, small features' },
+  7: { height: '4 feet tall exactly (second grader)', build: 'lean, starting to lose baby fat, small hands', face: 'round face, head still proportionally large, slightly slimmer cheeks than younger' },
+  8: { height: '4 feet 3 inches tall (third grader)', build: 'lean, small but athletic build, small hands', face: 'round face, large head relative to body, cheeks starting to slim slightly' },
+}
+
+function ageProportions(age: number): string {
+  const p = CDC_PROPORTIONS[Math.min(Math.max(age, 3), 8)]
+  return `${p.height}. Body: ${p.build}. Face and head: ${p.face}. This is a YOUNG CHILD not a teenager — very short stature, large head-to-body ratio, clearly a small kid.`
+}
+
+export function buildAnchorPrompt(characterDescription: string, age: number): string {
+  const proportions = ageProportions(age)
+  return `${ART_STYLE_PREFIX}. Character reference sheet showing front view, 3/4 view, and side view of the same character, plus facial expressions (happy, surprised, sad) in the top right corner. ${characterDescription}. ${proportions}. Full body visible in each view, arms at sides, hands visible, plain cream background. Classic Disney character sheet layout.`
 }
 
 // ── Replicate polling helper ─────────────────────────────────────────────────
@@ -78,9 +97,10 @@ async function waitForPrediction(
 
 export async function generateCharacterAnchor(
   apiKey: string,
-  characterDescription: string
+  characterDescription: string,
+  age: number
 ): Promise<string> {
-  const prompt = buildAnchorPrompt(characterDescription)
+  const prompt = buildAnchorPrompt(characterDescription, age)
 
   let response: Response
   try {

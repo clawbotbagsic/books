@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
   // ── PASS 2: Image Generation — fire-and-forget so client gets UUID immediately ──
 console.log('[generate] Starting background image generation for', bookUuid)
 waitUntil(
-  generateImages(supabase, bookUuid, storyJSON, replicateKey, usingByok)
+  generateImages(supabase, bookUuid, storyJSON, replicateKey, usingByok, age)
     .then(() => console.log('[generate] Image generation complete for', bookUuid))
     .catch(err => console.error('[generate] Background image generation failed:', err))
 )
@@ -192,9 +192,9 @@ return NextResponse.json({ uuid: bookUuid, status: 'generating' })
 // Phase 1: Generate character anchor image from character_description (1 call)
 // Phase 2: Generate per-page illustrations using anchor as subject reference
 //
-// Pages run in batches of 3 — Replicate handles concurrency well at this size.
-// Anchor serialises before batch loop so all pages share the same reference.
-const IMAGE_BATCH_SIZE = 3
+// Fire all pages concurrently — endpoint bug is fixed, no reason to throttle.
+// Replicate queues excess requests gracefully; 2s inter-batch delay removed.
+const IMAGE_BATCH_SIZE = 14
 
 async function generateImages(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -203,7 +203,8 @@ async function generateImages(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   storyJSON: any,
   replicateKey: string,
-  usingByok: boolean
+  usingByok: boolean,
+  age: number
 ): Promise<void> {
   const imageUrls: (string | null)[] = new Array(storyJSON.pages.length).fill(null)
   let authFailed = false
@@ -215,7 +216,7 @@ async function generateImages(
   let anchorUrl: string
   try {
     console.log('[generate] Generating character anchor for', bookUuid)
-    anchorUrl = await generateCharacterAnchor(replicateKey, storyJSON.character_description)
+    anchorUrl = await generateCharacterAnchor(replicateKey, storyJSON.character_description, age)
     console.log('[generate] Anchor ready:', anchorUrl)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
@@ -289,11 +290,6 @@ async function generateImages(
     )
 
     await Promise.allSettled(promises)
-
-    // Brief pause between batches to avoid Replicate rate limits
-    if (batchStart + IMAGE_BATCH_SIZE < storyJSON.pages.length) {
-      await new Promise(r => setTimeout(r, 2000))
-    }
   }
 
   if (authFailed) return
