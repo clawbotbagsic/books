@@ -186,8 +186,9 @@ waitUntil(
 return NextResponse.json({ uuid: bookUuid, status: 'generating' })
 }
 // ── Background image generation ───────────────────────────────────────────────
-// Runs after the HTTP response is sent. Updates the book record in Supabase
-// after each page so the polling client sees live progress.
+// Runs after the HTTP response is sent. Fires all 10 Ideogram requests in
+// parallel (instead of sequentially) and updates the book record in Supabase
+// as each image lands, so the polling client sees live progress.
 async function generateImages(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
@@ -199,55 +200,63 @@ async function generateImages(
   childAge: number
 ): Promise<void> {
   const imageUrls: (string | null)[] = new Array(storyJSON.pages.length).fill(null)
+  let authFailed = false
 
-  for (let i = 0; i < storyJSON.pages.length; i++) {
-    const page = storyJSON.pages[i]
-    const prompt = buildImagePrompt(page.image_prompt, storyJSON.character_description, childAge)
+  // Fire all image requests concurrently
+  const promises = storyJSON.pages.map(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (page: any, i: number) =>
+      (async () => {
+        if (authFailed) return // bail early if auth already failed
 
-    let ideogramUrl: string
-    try {
-      ideogramUrl = await callIdeogram(ideogramKey, prompt)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      console.error(`[generate] Ideogram failed for page ${page.page_number}:`, err)
+        const prompt = buildImagePrompt(page.image_prompt, storyJSON.character_description, childAge)
 
-      if (message.includes('401') || message.includes('Unauthorized') || message.includes('Invalid API key')) {
-        await supabase
-          .from('books')
-          .update({ status: 'failed' })
-          .eq('uuid', bookUuid)
-        return
-      }
+        let ideogramUrl: string
+        try {
+          ideogramUrl = await callIdeogram(ideogramKey, prompt)
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Unknown error'
+          console.error(`[generate] Ideogram failed for page ${page.page_number}:`, err)
 
-      // Non-fatal: skip this image, keep going
-      console.warn(`[generate] Skipping page ${page.page_number} image due to error`)
-      continue
-    }
+          if (message.includes('401') || message.includes('Unauthorized') || message.includes('Invalid API key')) {
+            authFailed = true
+            await supabase
+              .from('books')
+              .update({ status: 'failed' })
+              .eq('uuid', bookUuid)
+          }
+          return
+        }
 
-    // Upload to Supabase Storage
-    let publicUrl: string
-    try {
-      publicUrl = await uploadImage(ideogramUrl, bookUuid, page.page_number)
-    } catch (err) {
-      console.error(`[generate] Storage upload failed for page ${page.page_number}:`, err)
-      continue
-    }
+        // Upload to Supabase Storage
+        let publicUrl: string
+        try {
+          publicUrl = await uploadImage(ideogramUrl, bookUuid, page.page_number)
+        } catch (err) {
+          console.error(`[generate] Storage upload failed for page ${page.page_number}:`, err)
+          return
+        }
 
-    imageUrls[i] = publicUrl
+        imageUrls[i] = publicUrl
 
-    // Update the book record after each image so poller sees live progress
-    try {
-      await supabase
-        .from('books')
-        .update({
-          image_urls: imageUrls,
-          pages_complete: imageUrls.filter(Boolean).length,
-        })
-        .eq('uuid', bookUuid)
-    } catch (err) {
-      console.error(`[generate] Failed to update book after page ${page.page_number}:`, err)
-    }
-  }
+        // Update the book record so poller sees live progress
+        try {
+          await supabase
+            .from('books')
+            .update({
+              image_urls: [...imageUrls],
+              pages_complete: imageUrls.filter(Boolean).length,
+            })
+            .eq('uuid', bookUuid)
+        } catch (err) {
+          console.error(`[generate] Failed to update book after page ${page.page_number}:`, err)
+        }
+      })()
+  )
+
+  await Promise.allSettled(promises)
+
+  if (authFailed) return
 
   // Mark book complete
   try {
