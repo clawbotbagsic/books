@@ -1,24 +1,26 @@
 'use client'
 
 // components/landing/BookFormWizard.tsx
-// 4-step wizard orchestrator — replaces BookForm.tsx on the home page
+// 5-step wizard orchestrator — Character → Name → Age → Theme → Pronouns
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/context/SessionContext'
-import { WizardStep1Name }     from './WizardStep1Name'
-import { WizardStep2Age }      from './WizardStep2Age'
-import { WizardStep3Theme }    from './WizardStep3Theme'
-import { WizardStep4Pronouns } from './WizardStep4Pronouns'
-import type { ReadMode }       from '@/types/index'
+import { WizardStep1Character } from './WizardStep1Character'
+import { WizardStep2Name }      from './WizardStep2Name'
+import { WizardStep3Age }       from './WizardStep3Age'
+import { WizardStep4Theme }     from './WizardStep4Theme'
+import { WizardStep5Pronouns }  from './WizardStep5Pronouns'
+import type { ReadMode }        from '@/types/index'
 
-type Step = 1 | 2 | 3 | 4
+type Step = 1 | 2 | 3 | 4 | 5
 
 const STEP_HINTS: Record<Step, string> = {
-  1: 'Name',
-  2: 'Age',
-  3: 'Adventure',
-  4: 'Almost done',
+  1: 'Character',
+  2: 'Name',
+  3: 'Age',
+  4: 'Adventure',
+  5: 'Almost done',
 }
 
 export function BookFormWizard() {
@@ -26,14 +28,15 @@ export function BookFormWizard() {
   const { sessionId, usageCount, usageLimit, hasKeys, byokKeys, openByokModal } = useSession()
 
   // Collected form data
-  const [childName, setChildName]   = useState('')
-  const [age, setAge]               = useState<number | null>(null)
-  const [readMode, setReadMode]     = useState<ReadMode>('aloud')
-  const [theme, setTheme]           = useState('')
+  const [characterId, setCharacterId] = useState<string | null>(null)
+  const [childName, setChildName]     = useState('')
+  const [age, setAge]                 = useState<number | null>(null)
+  const [readMode, setReadMode]       = useState<ReadMode>('aloud')
+  const [theme, setTheme]             = useState('')
 
   // UI state
-  const [step, setStep]             = useState<Step>(1)
-  const [submitting, setSubmitting] = useState(false)
+  const [step, setStep]               = useState<Step>(1)
+  const [submitting, setSubmitting]   = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   // Derive tier from age
@@ -43,37 +46,43 @@ export function BookFormWizard() {
     return 3
   }
 
-  // Step 1 → 2
-  const handleStep1 = useCallback((name: string) => {
-    setChildName(name)
+  // Step 1 → 2 (character → name)
+  const handleStep1 = useCallback((selectedCharacterId: string) => {
+    setCharacterId(selectedCharacterId)
     setStep(2)
   }, [])
 
-  // Step 2 → 3
-  const handleStep2 = useCallback((selectedAge: number, selectedReadMode: ReadMode) => {
-    setAge(selectedAge)
-    setReadMode(selectedReadMode)
+  // Step 2 → 3 (name → age)
+  const handleStep2 = useCallback((name: string) => {
+    setChildName(name)
     setStep(3)
   }, [])
 
-  // Step 3 → 4
-  const handleStep3 = useCallback((selectedTheme: string) => {
-    setTheme(selectedTheme)
+  // Step 3 → 4 (age → theme)
+  const handleStep3 = useCallback((selectedAge: number, selectedReadMode: ReadMode) => {
+    setAge(selectedAge)
+    setReadMode(selectedReadMode)
     setStep(4)
   }, [])
 
-  // Step 4 → submit
+  // Step 4 → 5 (theme → pronouns)
+  const handleStep4 = useCallback((selectedTheme: string) => {
+    setTheme(selectedTheme)
+    setStep(5)
+  }, [])
+
+  // Step 5 → submit
   const handleSubmit = useCallback(async (pronouns: 'he/him' | 'she/her') => {
     setSubmitError(null)
 
-    // BYOK gate — same logic as BookForm.tsx
+    // BYOK gate
     const needsByok = usageCount >= usageLimit
     if (needsByok && !hasKeys) {
       openByokModal()
       return
     }
 
-    if (!sessionId || age === null) {
+    if (!sessionId || age === null || !characterId) {
       setSubmitError('Session not ready. Please wait and try again.')
       return
     }
@@ -92,6 +101,7 @@ export function BookFormWizard() {
         headers,
         body: JSON.stringify({
           sessionId,
+          characterId,
           childName,
           age,
           tier: getTier(age),
@@ -128,17 +138,17 @@ export function BookFormWizard() {
       setSubmitError('Could not connect. Please check your internet connection.')
       setSubmitting(false)
     }
-  }, [sessionId, usageCount, usageLimit, hasKeys, byokKeys, openByokModal, age, childName, theme, readMode, router])
+  }, [sessionId, usageCount, usageLimit, hasKeys, byokKeys, openByokModal, age, characterId, childName, theme, readMode, router])
 
   return (
     <div id="wizard" className="w-full">
       {/* Step indicator */}
       <div className="flex flex-col items-center mb-6">
         <p className="font-nunito text-sm text-amber-700 mb-3">
-          ✦ Step {step} of 4 — {STEP_HINTS[step]}
+          ✦ Step {step} of 5 — {STEP_HINTS[step]}
         </p>
         <div className="flex items-center gap-2">
-          {([1, 2, 3, 4] as Step[]).map(s => (
+          {([1, 2, 3, 4, 5] as Step[]).map(s => (
             <div
               key={s}
               className={`
@@ -156,11 +166,12 @@ export function BookFormWizard() {
         <span className="absolute top-4 left-4 text-amber-200 text-xl" aria-hidden="true">✦</span>
         <span className="absolute top-4 right-4 text-amber-200 text-xl" aria-hidden="true">✦</span>
 
-        {step === 1 && <WizardStep1Name onNext={handleStep1} />}
-        {step === 2 && <WizardStep2Age  onNext={handleStep2} />}
-        {step === 3 && <WizardStep3Theme onNext={handleStep3} />}
-        {step === 4 && (
-          <WizardStep4Pronouns
+        {step === 1 && <WizardStep1Character onNext={handleStep1} />}
+        {step === 2 && <WizardStep2Name      onNext={handleStep2} />}
+        {step === 3 && <WizardStep3Age       onNext={handleStep3} />}
+        {step === 4 && <WizardStep4Theme     onNext={handleStep4} />}
+        {step === 5 && (
+          <WizardStep5Pronouns
             childName={childName}
             onSubmit={handleSubmit}
             submitting={submitting}
