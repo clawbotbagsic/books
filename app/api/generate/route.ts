@@ -186,9 +186,10 @@ waitUntil(
 return NextResponse.json({ uuid: bookUuid, status: 'generating' })
 }
 // ── Background image generation ───────────────────────────────────────────────
-// Runs after the HTTP response is sent. Fires all 10 Ideogram requests in
-// parallel (instead of sequentially) and updates the book record in Supabase
-// as each image lands, so the polling client sees live progress.
+// Runs after the HTTP response is sent. Processes images in batches of 3
+// to stay within Ideogram rate limits while still being ~3x faster than serial.
+const IMAGE_BATCH_SIZE = 3
+
 async function generateImages(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
@@ -202,59 +203,67 @@ async function generateImages(
   const imageUrls: (string | null)[] = new Array(storyJSON.pages.length).fill(null)
   let authFailed = false
 
-  // Fire all image requests concurrently
-  const promises = storyJSON.pages.map(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (page: any, i: number) =>
-      (async () => {
-        if (authFailed) return // bail early if auth already failed
+  // Process in batches of IMAGE_BATCH_SIZE
+  for (let batchStart = 0; batchStart < storyJSON.pages.length; batchStart += IMAGE_BATCH_SIZE) {
+    if (authFailed) break
 
-        const prompt = buildImagePrompt(page.image_prompt, storyJSON.character_description, childAge)
+    const batchEnd = Math.min(batchStart + IMAGE_BATCH_SIZE, storyJSON.pages.length)
+    const batch = storyJSON.pages.slice(batchStart, batchEnd)
 
-        let ideogramUrl: string
-        try {
-          ideogramUrl = await callIdeogram(ideogramKey, prompt)
-        } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : 'Unknown error'
-          console.error(`[generate] Ideogram failed for page ${page.page_number}:`, err)
+    const promises = batch.map(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (page: any, batchIndex: number) =>
+        (async () => {
+          const i = batchStart + batchIndex
+          if (authFailed) return
 
-          if (message.includes('401') || message.includes('Unauthorized') || message.includes('Invalid API key')) {
-            authFailed = true
+          const prompt = buildImagePrompt(page.image_prompt, storyJSON.character_description, childAge)
+
+          let ideogramUrl: string
+          try {
+            ideogramUrl = await callIdeogram(ideogramKey, prompt)
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error'
+            console.error(`[generate] Ideogram failed for page ${page.page_number}:`, err)
+
+            if (message.includes('401') || message.includes('Unauthorized') || message.includes('Invalid API key')) {
+              authFailed = true
+              await supabase
+                .from('books')
+                .update({ status: 'failed' })
+                .eq('uuid', bookUuid)
+            }
+            return
+          }
+
+          // Upload to Supabase Storage
+          let publicUrl: string
+          try {
+            publicUrl = await uploadImage(ideogramUrl, bookUuid, page.page_number)
+          } catch (err) {
+            console.error(`[generate] Storage upload failed for page ${page.page_number}:`, err)
+            return
+          }
+
+          imageUrls[i] = publicUrl
+
+          // Update the book record so poller sees live progress
+          try {
             await supabase
               .from('books')
-              .update({ status: 'failed' })
+              .update({
+                image_urls: [...imageUrls],
+                pages_complete: imageUrls.filter(Boolean).length,
+              })
               .eq('uuid', bookUuid)
+          } catch (err) {
+            console.error(`[generate] Failed to update book after page ${page.page_number}:`, err)
           }
-          return
-        }
+        })()
+    )
 
-        // Upload to Supabase Storage
-        let publicUrl: string
-        try {
-          publicUrl = await uploadImage(ideogramUrl, bookUuid, page.page_number)
-        } catch (err) {
-          console.error(`[generate] Storage upload failed for page ${page.page_number}:`, err)
-          return
-        }
-
-        imageUrls[i] = publicUrl
-
-        // Update the book record so poller sees live progress
-        try {
-          await supabase
-            .from('books')
-            .update({
-              image_urls: [...imageUrls],
-              pages_complete: imageUrls.filter(Boolean).length,
-            })
-            .eq('uuid', bookUuid)
-        } catch (err) {
-          console.error(`[generate] Failed to update book after page ${page.page_number}:`, err)
-        }
-      })()
-  )
-
-  await Promise.allSettled(promises)
+    await Promise.allSettled(promises)
+  }
 
   if (authFailed) return
 

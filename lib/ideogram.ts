@@ -66,7 +66,7 @@ export async function callIdeogram(
           negative_prompt: NEGATIVE_PROMPT,
           aspect_ratio: 'ASPECT_4_3',
           model: 'V_2',
-          style_type: 'ILLUSTRATION',
+          style_type: 'CHILDRENS_BOOK',
           magic_prompt_option: 'OFF',
         },
       }),
