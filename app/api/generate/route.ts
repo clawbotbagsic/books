@@ -1,7 +1,7 @@
 // app/api/generate/route.ts — POST: full book generation orchestration
 // Pass 1: Claude story generation → Pass 2: Ideogram image generation (fire-and-forget)
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import { generateStory } from '@/lib/anthropic'
 import { callIdeogram, buildImagePrompt } from '@/lib/ideogram'
@@ -176,9 +176,11 @@ export async function POST(request: NextRequest) {
 
   // ── PASS 2: Image Generation — fire-and-forget so client gets UUID immediately ──
 console.log('[generate] Starting background image generation for', bookUuid)
-  generateImages(supabase, bookUuid, storyJSON, ideogramKey, usingByok)
+after(async () => {
+  await generateImages(supabase, bookUuid, storyJSON, ideogramKey, usingByok)
     .then(() => console.log('[generate] Image generation complete for', bookUuid))
     .catch(err => console.error('[generate] Background image generation failed:', err))
+})
 
   // Return UUID immediately — client polls /api/book/[uuid] for progress
   return NextResponse.json({ uuid: bookUuid, status: 'generating' })
