@@ -151,18 +151,38 @@ Do NOT include clothing in the character_description — clothing is locked sepa
 
 ## IMAGE PROMPTS (SCENE DESCRIPTIONS FOR ILLUSTRATION)
 
-Each page includes an \`image_prompt\` field. This is sent directly to an image generation model. Write it as a **cinematographer's shot description**, not a summary of the text:
+Each page includes an \`image_prompt\` field sent directly to an image generation model. The image must tell the story visually — a child should be able to understand what's happening on this page just by looking at the picture, with NO text.
 
-- Describe the SPECIFIC visual scene: where the characters are positioned, what action is happening, what the environment looks like
-- Include camera angle and framing: "Wide shot from below looking up at [character] standing on the cliff edge" or "Close-up of [character]'s face, eyes wide, mouth open in surprise"
-- Describe emotion visible in face and body language: "shoulders hunched, fists clenched, jaw set with determination"
-- Describe lighting and atmosphere: "golden afternoon sunlight streaming through the trees" or "dark cave lit only by a glowing crystal"
-- Describe environment in detail: specific plants, weather, architecture, objects in the scene
-- Do NOT include character physical description or clothing — those are appended automatically
-- Do NOT re-describe the sidekick's appearance (color, breed, size, markings). Refer to the sidekick by NAME ONLY (e.g. "${input.sidekick || 'Buddy'}"). The sidekick's full visual description is in character_description and gets prepended automatically. Re-describing it with different words causes the illustrator to draw a different animal on each page.
-- Keep each image_prompt to 3-5 sentences. More detail = better illustrations.
+**MANDATORY STRUCTURE — follow this order every time:**
 
-Example image_prompt: "Wide shot of a mossy underground cavern with a glowing turquoise river running through it. ${input.childName} crouches on a flat rock at the river's edge, reaching toward a floating crystal just out of arm's reach. ${pronouns.possessive} face shows intense concentration, tongue slightly out, one eye squinted.${input.sidekick ? ` ${input.sidekick} stands behind ${pronouns.object} with ears perked and tail mid-wag, ready to pounce.` : ''} Bioluminescent blue-green light reflects off the cavern walls and water surface. Low angle looking up at ${input.childName} to make ${pronouns.object} look heroic."
+**1. BACKGROUND SCENE FIRST (required, 2 sentences minimum)**
+Start with the environment. Name specific things in it. This is what makes illustrations rich — kids spend minutes looking at the world behind the characters.
+- BAD: "A forest."
+- GOOD: "A dense jungle with towering banyan trees draped in hanging vines, colorful parrots perched on branches, a winding dirt path disappearing into the green, and patches of golden sunlight breaking through the leafy canopy above."
+
+**2. CHARACTER ACTION (required)**
+Where is ${input.childName} in that scene? What are they physically doing? Camera angle and framing.
+- BAD: "${input.childName} looks scared."
+- GOOD: "${input.childName} stands frozen on the path, eyes wide, one foot lifted mid-step, both hands raised. Medium shot from slightly below, making the towering trees look even larger."
+
+**3. EMOTION & STORY MOMENT (required)**
+What specific story beat is this? What emotion is visible in the body and face?
+- BAD: "${input.childName} is worried."
+- GOOD: "${pronouns.possessive} jaw is clenched, brow furrowed, fists tight — the exact moment ${pronouns.subject} spots the broken bridge ahead."${input.sidekick ? `
+
+**4. SIDEKICK (when present)**
+Where is ${input.sidekick} in the scene? What are they doing that adds to the story moment? Refer to ${input.sidekick} by name ONLY — never re-describe their appearance.
+- BAD: "${input.sidekick} is there too."
+- GOOD: "${input.sidekick} peeks out from behind ${pronouns.possessive} leg, one eye open, tail tucked."` : ''}
+
+**RULES:**
+- Do NOT include character physical description or clothing — appended automatically
+- Do NOT re-describe the sidekick's appearance. Name only — their description is already in character_description
+- Every image_prompt must describe a specific PLACE with specific THINGS in it — trees with fruit, a kitchen with cereal boxes on the counter, a beach with a sandcastle and a red bucket, a bedroom with glow-in-the-dark stars on the ceiling
+- 4–6 sentences total. Every sentence should add something visually distinct.
+
+**Example — jungle adventure, page where ${input.childName} discovers a hidden waterfall:**
+"A hidden jungle clearing with a thundering waterfall crashing down mossy rocks into a crystal-clear pool below, surrounded by giant tropical ferns, glowing fireflies hovering near the water's surface, and a rainbow caught in the mist. Bright green frogs sit on lily pads at the pool's edge. ${input.childName} stands at the top of a flat boulder overlooking the waterfall, arms stretched wide, head thrown back in pure joy. Wide shot from below so the waterfall towers behind ${pronouns.object}, making ${pronouns.object} look small against the massive cascade.${input.sidekick ? ` ${input.sidekick} leaps off the boulder mid-air, paws spread, mouth open in a huge delighted grin.` : ''} Golden late-afternoon light cuts through the tree canopy, catching the mist and turning it into sparkling gold."
 
 ## OUTPUT SCHEMA
 
