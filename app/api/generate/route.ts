@@ -289,6 +289,11 @@ async function generateImages(
     )
 
     await Promise.allSettled(promises)
+
+    // Brief pause between batches to avoid Replicate rate limits
+    if (batchStart + IMAGE_BATCH_SIZE < storyJSON.pages.length) {
+      await new Promise(r => setTimeout(r, 2000))
+    }
   }
 
   if (authFailed) return
