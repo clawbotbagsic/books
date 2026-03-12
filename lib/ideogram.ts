@@ -52,24 +52,24 @@ export async function callIdeogram(
   apiKey: string,
   prompt: string
 ): Promise<string> {
-  // Ideogram V3 uses multipart/form-data with flat fields
-  const formData = new FormData()
-  formData.append('prompt', prompt)
-  formData.append('negative_prompt', NEGATIVE_PROMPT)
-  formData.append('aspect_ratio', '4:3')
-  formData.append('style_type', 'DESIGN')
-  formData.append('style_preset', 'CHILDRENS_BOOK')
-  formData.append('rendering_speed', 'DEFAULT')
-  formData.append('num_images', '1')
-
   let response: Response
   try {
-    response = await fetch('https://api.ideogram.ai/v1/ideogram-v3/generate', {
+    response = await fetch('https://api.ideogram.ai/generate', {
       method: 'POST',
       headers: {
         'Api-Key': apiKey,
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify({
+        image_request: {
+          prompt,
+          negative_prompt: NEGATIVE_PROMPT,
+          aspect_ratio: 'ASPECT_4_3',
+          model: 'V_2',
+          style_type: 'DESIGN',
+          magic_prompt_option: 'OFF',
+        },
+      }),
     })
   } catch (err) {
     throw new ImageGenerationError('Ideogram API network request failed', err)
