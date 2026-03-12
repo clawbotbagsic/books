@@ -11,32 +11,45 @@ export class ValidationError extends Error {
 }
 
 export const StoryPageSchema = z.object({
-  page_number: z.number().int().min(1).max(10),
+  page_number: z.number().int().min(1).max(32),
   text: z.string().min(1, 'Page text must not be empty'),
   image_prompt: z.string().min(1, 'Image prompt must not be empty'),
 })
 
+// Base schema — page count validated separately based on tier's targetPages
 export const StoryJSONSchema = z.object({
   character_description: z.string().min(1, 'Character description must not be empty'),
   pages: z
     .array(StoryPageSchema)
-    .length(10, 'Story must have exactly 10 pages'),
+    .min(10, 'Story must have at least 10 pages')
+    .max(32, 'Story must have at most 32 pages'),
 })
 
-export function validateStoryJSON(raw: unknown): StoryJSON {
+export function validateStoryJSON(raw: unknown, expectedPages?: number): StoryJSON {
   const result = StoryJSONSchema.safeParse(raw)
   if (!result.success) {
     throw new ValidationError(`Story validation failed: ${result.error.message}`)
   }
 
   const story = result.data
+  const n = story.pages.length
 
-  // Verify page_numbers are exactly 1-10 in sequential order
+  // If caller specifies expected page count, enforce it (with ±2 tolerance for Claude variance)
+  if (expectedPages !== undefined) {
+    const tolerance = 2
+    if (Math.abs(n - expectedPages) > tolerance) {
+      throw new ValidationError(
+        `Story has ${n} pages but expected ~${expectedPages} (±${tolerance}) for this tier`
+      )
+    }
+  }
+
+  // Verify page_numbers are sequential 1-N
   const pageNumbers = story.pages.map(p => p.page_number)
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < n; i++) {
     if (pageNumbers[i] !== i + 1) {
       throw new ValidationError(
-        `Page numbers must be sequential 1-10. Got ${pageNumbers.join(', ')}`
+        `Page numbers must be sequential 1-${n}. Got ${pageNumbers.join(', ')}`
       )
     }
   }

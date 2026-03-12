@@ -17,6 +17,10 @@ export interface GenerationState {
   status: GenerationStatus
   bookUuid: string | null
   pagesComplete: number
+  totalPages: number                  // derived from pages.length in the poll response
+  imageUrls: (string | null)[]        // per-page URLs as they arrive — null until rendered
+  childName: string
+  theme: string
   errorMessage: string | null
 }
 
@@ -27,6 +31,10 @@ export function useBookGeneration() {
     status: 'idle',
     bookUuid: null,
     pagesComplete: 0,
+    totalPages: 0,
+    imageUrls: [],
+    childName: '',
+    theme: '',
     errorMessage: null,
   })
 
@@ -65,12 +73,22 @@ export function useBookGeneration() {
 
         const book: BookRecord = await res.json()
 
+        // Extract per-page image URLs and metadata on every poll
+        const imageUrls = book.pages.map(p => p.image_url)
+        const totalPages = book.pages.length
+        const childName = book.childName
+        const theme = book.theme
+
         if (book.status === 'complete') {
           stopPolling()
           setState(prev => ({
             ...prev,
             status: 'complete',
             pagesComplete: book.pages_complete,
+            totalPages,
+            imageUrls,
+            childName,
+            theme,
             bookUuid: uuid,
           }))
           return
@@ -92,6 +110,10 @@ export function useBookGeneration() {
           ...prev,
           status: pagesComplete > 0 ? 'illustrating' : 'writing',
           pagesComplete,
+          totalPages,
+          imageUrls,
+          childName,
+          theme,
         }))
 
         pollTimerRef.current = setTimeout(() => pollBook(uuid), POLL_INTERVAL_MS)
@@ -113,6 +135,10 @@ export function useBookGeneration() {
         status: 'writing',
         bookUuid: uuid,
         pagesComplete: 0,
+        totalPages: 0,
+        imageUrls: [],
+        childName: '',
+        theme: '',
         errorMessage: null,
       })
       // Start polling after initial delay to allow server to begin
@@ -128,6 +154,10 @@ export function useBookGeneration() {
       status: 'idle',
       bookUuid: null,
       pagesComplete: 0,
+      totalPages: 0,
+      imageUrls: [],
+      childName: '',
+      theme: '',
       errorMessage: null,
     })
   }, [stopPolling])

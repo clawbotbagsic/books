@@ -19,7 +19,8 @@ export function getAnthropicKey(req: Request): string {
 
 export function buildStoryPrompt(
   input: BookFormInput,
-  tier: LexileTier
+  tier: LexileTier,
+  characterDescription?: string   // pre-made character — overrides generated description
 ): { systemPrompt: string; userPrompt: string } {
   // Derive pronoun variants from the pronouns field
   const pronounMap: Record<string, { subject: string; object: string; possessive: string; reflexive: string }> = {
@@ -126,9 +127,18 @@ ${tier.tier === 1 ? `
 
 ## CHARACTER DESCRIPTION (CRITICAL FOR VISUAL CONSISTENCY)
 
-The JSON you return includes a \`character_description\` field. This is the single most important element for visual consistency across all ${totalPages} illustrations.
+The JSON you return includes a \`character_description\` field. This drives visual consistency across all ${totalPages} illustrations.
 
-Write it as a precise, concrete visual description (3-5 sentences) covering:
+${characterDescription
+  ? `**The main character's appearance is PRE-DEFINED — do NOT invent a new one.**
+Use this EXACT description verbatim in the \`character_description\` field:
+
+"${characterDescription}"
+
+This description is locked. Do not alter it, summarize it, or add to it. Copy it exactly.${input.sidekick ? `
+
+For the sidekick ${input.sidekick}: append a hyper-specific visual description (3-4 sentences) covering exact species/breed, fur/skin color and pattern, size relative to the main character, ear shape, tail type, eye color, and any unique markings.` : ''}`
+  : `Write it as a precise, concrete visual description (3-5 sentences) covering:
 - Hair: color, length, and style
 - Skin tone
 - Eyes: color
@@ -136,7 +146,8 @@ Write it as a precise, concrete visual description (3-5 sentences) covering:
 - Any unique distinguishing feature (glasses, freckles, a specific accessory)
 
 Do NOT include clothing in the character_description — clothing is locked separately and injected into image prompts automatically. Do NOT use abstract traits ("looks friendly," "seems adventurous"). Only concrete visuals that an illustrator could draw from.${input.sidekick ? `
-- CRITICAL: Include a hyper-specific visual description of ${input.sidekick} (3-4 sentences). Specify: exact breed or species, exact fur/skin color and pattern, size relative to the child, ear shape, tail type, eye color, and any unique markings. This description is the ONLY thing keeping ${input.sidekick} looking the same across 10 illustrations. Vague descriptions like "small white dog" will produce a different animal on every page.` : ''}
+- CRITICAL: Include a hyper-specific visual description of ${input.sidekick} (3-4 sentences). Specify: exact breed or species, exact fur/skin color and pattern, size relative to the child, ear shape, tail type, eye color, and any unique markings. This description is the ONLY thing keeping ${input.sidekick} looking the same across 10 illustrations. Vague descriptions like "small white dog" will produce a different animal on every page.` : ''}`
+}
 
 ## IMAGE PROMPTS (SCENE DESCRIPTIONS FOR ILLUSTRATION)
 
@@ -229,9 +240,10 @@ export async function callClaude(
 export async function generateStory(
   apiKey: string,
   input: BookFormInput,
-  tier: LexileTier
+  tier: LexileTier,
+  characterDescription?: string
 ): Promise<StoryJSON> {
-  const { systemPrompt, userPrompt } = buildStoryPrompt(input, tier)
+  const { systemPrompt, userPrompt } = buildStoryPrompt(input, tier, characterDescription)
 
   // First attempt
   try {

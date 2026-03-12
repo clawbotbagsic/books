@@ -47,10 +47,10 @@ const CHARACTERS = [
     prompt: `A small chubby dragon with warm orange and red scales, tiny rounded wings, stubby tail, big amber eyes with a gentle glow, small rounded snout with a wisp of smoke curling out. Toddler-sized, adorable proportions. Full body, standing pose. Pure white background. Clean vector-art style, bold outlines, vibrant colors. No text, no humans.`,
   },
   {
-    id: 'pip',
-    name: 'Pip',
-    species: 'dinosaur',
-    prompt: `A small pudgy stegosaurus-like dinosaur, mint green with tiny bright yellow dorsal plates, short stubby legs, big round eyes with long lashes, cheerful smile, toddler-scale proportions. Full body, standing pose. Pure white background. Clean vector-art style, bold outlines, vibrant colors. No text, no humans.`,
+    id: 'punch',
+    name: 'Punch',
+    species: 'orangutan',
+    prompt: `A small chubby baby orangutan with rich reddish-brown fluffy fur, a pale cream face with huge round expressive eyes, round flat nose, wide goofy grin showing tiny teeth, long floppy arms almost touching the ground, toddler-sized compact body. Standing pose, arms slightly out. Pure white background. Clean cartoon vector-art style, bold outlines, warm colors. Adorable and funny, not scary. No text, no humans.`,
   },
   {
     id: 'boo',
@@ -153,7 +153,7 @@ async function uploadToSupabase(
   const filePath = `characters/${characterId}.webp`
 
   const { error } = await supabase.storage
-    .from('book-assets')
+    .from('books')
     .upload(filePath, imageBuffer, {
       contentType: 'image/webp',
       upsert: true,
@@ -161,7 +161,7 @@ async function uploadToSupabase(
 
   if (error) throw new Error(`Supabase upload failed: ${error.message}`)
 
-  const { data } = supabase.storage.from('book-assets').getPublicUrl(filePath)
+  const { data } = supabase.storage.from('books').getPublicUrl(filePath)
   return data.publicUrl
 }
 

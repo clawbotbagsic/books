@@ -15,14 +15,15 @@ export type ThemeKey =
   | 'before-the-storm'
 
 export interface BookFormInput {
-  sessionId:  string
-  childName:  string           // max 30 chars
-  age:        number           // 3-8 (Phase 1); 9-12 Phase 2+
-  tier:       1 | 2 | 3 | 4 | 5
-  theme:      string           // one of the 10 ThemeKey values (Phase 1)
-  readMode?:  ReadMode         // optional — defaults to 'aloud' if omitted
-  pronouns:   'he/him' | 'she/her' | 'they/them'
-  sidekick?:  string           // optional companion character, max 50 chars
+  sessionId:    string
+  characterId:  string           // id from CHARACTERS roster in lib/characters.ts
+  childName:    string           // max 30 chars
+  age:          number           // 3-8 (Phase 1); 9-12 Phase 2+
+  tier:         1 | 2 | 3 | 4 | 5
+  theme:        string           // one of the 10 ThemeKey values (Phase 1)
+  readMode?:    ReadMode         // optional — defaults to 'aloud' if omitted
+  pronouns:     'he/him' | 'she/her' | 'they/them'
+  sidekick?:    string           // optional companion character, max 50 chars
 }
 
 export interface LexileTier {

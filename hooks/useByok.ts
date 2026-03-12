@@ -6,38 +6,38 @@
 import { useState, useEffect, useCallback } from 'react'
 
 const ANTHROPIC_KEY = 'byok_anthropic_key'
-const IDEOGRAM_KEY = 'byok_ideogram_key'
+const REPLICATE_KEY = 'byok_replicate_key'
 
 export interface ByokKeys {
   anthropicKey: string
-  ideogramKey: string
+  replicateKey: string
 }
 
 export function useByok() {
-  const [keys, setKeys] = useState<ByokKeys>({ anthropicKey: '', ideogramKey: '' })
+  const [keys, setKeys] = useState<ByokKeys>({ anthropicKey: '', replicateKey: '' })
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     // Only runs in browser
     const anthropicKey = localStorage.getItem(ANTHROPIC_KEY) ?? ''
-    const ideogramKey = localStorage.getItem(IDEOGRAM_KEY) ?? ''
-    setKeys({ anthropicKey, ideogramKey })
+    const replicateKey = localStorage.getItem(REPLICATE_KEY) ?? ''
+    setKeys({ anthropicKey, replicateKey })
     setLoaded(true)
   }, [])
 
-  const saveKeys = useCallback((anthropicKey: string, ideogramKey: string) => {
+  const saveKeys = useCallback((anthropicKey: string, replicateKey: string) => {
     localStorage.setItem(ANTHROPIC_KEY, anthropicKey)
-    localStorage.setItem(IDEOGRAM_KEY, ideogramKey)
-    setKeys({ anthropicKey, ideogramKey })
+    localStorage.setItem(REPLICATE_KEY, replicateKey)
+    setKeys({ anthropicKey, replicateKey })
   }, [])
 
   const clearKeys = useCallback(() => {
     localStorage.removeItem(ANTHROPIC_KEY)
-    localStorage.removeItem(IDEOGRAM_KEY)
-    setKeys({ anthropicKey: '', ideogramKey: '' })
+    localStorage.removeItem(REPLICATE_KEY)
+    setKeys({ anthropicKey: '', replicateKey: '' })
   }, [])
 
-  const hasKeys = loaded && keys.anthropicKey.trim() !== '' && keys.ideogramKey.trim() !== ''
+  const hasKeys = loaded && keys.anthropicKey.trim() !== '' && keys.replicateKey.trim() !== ''
 
   return { keys, saveKeys, clearKeys, hasKeys, loaded }
 }

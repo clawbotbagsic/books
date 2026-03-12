@@ -358,6 +358,7 @@ async function main() {
   // Test 1: Minimum — Tier 1 Emerging
   await runTest('TEST 1: MINIMUM — Tier 1 Emerging, age 3, Sam', {
     sessionId: 'test-session-001',
+    characterId: 'zib',
     childName: 'Sam',
     age: 3,
     tier: 1,
@@ -368,6 +369,7 @@ async function main() {
   // Test 2: Typical — Tier 3 Developing
   await runTest('TEST 2: TYPICAL — Tier 3 Developing, age 7, Maya', {
     sessionId: 'test-session-002',
+    characterId: 'ember',
     childName: 'Maya',
     age: 7,
     tier: 3,
@@ -378,6 +380,7 @@ async function main() {
   // Test 3: Edge — Tier 5 Advanced
   await runTest('TEST 3: EDGE — Tier 5 Advanced, age 12, Zephyr', {
     sessionId: 'test-session-003',
+    characterId: 'punch',
     childName: 'Zephyr',
     age: 12,
     tier: 5,

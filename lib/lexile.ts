@@ -11,44 +11,67 @@ export class ValidationError extends Error {
 
 export const LEXILE_TIERS: LexileTier[] = [
   {
+    // Board book / Pre-reader — ages 3-4. Even simpler than Tier 2.
     tier: 1,
-    name: 'Emerging',
-    lexileRange: '100-300L',
+    name: 'Pre-Reader',
+    lexileRange: 'BR-100L',
     targetAge: 'Ages 3-4',
-    wordsPerPage: '1-2 sentences, 5-8 words each',
-    sentenceRules: 'Simple declarative. Subject-verb-object only.',
+    targetPages: 12,
+    pageRange: '10-14 pages',
+    wordsPerPage: '1-2 sentences, 3-6 words each',
+    totalWordRange: '30-80 words total',
+    sentenceRules: 'Subject-verb only. 80-90% one-syllable words. HIGH repetition — same pattern repeats with one word swap.',
   },
   {
+    // Early Reader / F&P Level A-C — ages 5-6, benchmark: Landon.
+    // Target: ~14 pages, ~80 words, ~6 words/page.
     tier: 2,
-    name: 'Beginning',
-    lexileRange: '300-500L',
+    name: 'Early Reader',
+    lexileRange: '100-300L',
     targetAge: 'Ages 5-6',
-    wordsPerPage: '2-3 sentences, 8-12 words each',
-    sentenceRules: 'Compound sentences ok. Common sight words.',
+    targetPages: 14,
+    pageRange: '12-16 pages',
+    wordsPerPage: '1-2 sentences, 3-10 words each',
+    totalWordRange: '50-150 words total',
+    sentenceRules: 'Dolch/Fry sight words dominate. CVC words. 80-90% one-syllable words. Repetitive sentence patterns. No multi-syllable words except character names. Simple present tense.',
   },
   {
+    // Developing Reader / F&P Level D-I — ages 7-8, benchmark: Baylor.
+    // Target: ~20 pages, ~300 words, ~15 words/page.
     tier: 3,
-    name: 'Developing',
-    lexileRange: '500-700L',
+    name: 'Developing Reader',
+    lexileRange: '300-500L',
     targetAge: 'Ages 7-8',
-    wordsPerPage: '3-4 sentences, 10-15 words each',
-    sentenceRules: 'Varied structure. Some descriptive language.',
+    targetPages: 20,
+    pageRange: '16-24 pages',
+    wordsPerPage: '2-4 sentences, 10-25 words each',
+    totalWordRange: '200-500 words total',
+    sentenceRules: 'Common blends and two-syllable words OK. 65-75% one-syllable words. Dialogue encouraged. Past tense and contractions OK. One "stretch" word per spread max.',
   },
   {
+    // Fluent Reader — ages 9-10. Chapter book bridge.
     tier: 4,
-    name: 'Fluent',
-    lexileRange: '700-900L',
+    name: 'Fluent Reader',
+    lexileRange: '500-700L',
     targetAge: 'Ages 9-10',
-    wordsPerPage: '4-5 sentences, 12-18 words each',
-    sentenceRules: 'Complex sentences. Richer vocabulary.',
+    targetPages: 28,
+    pageRange: '24-32 pages',
+    wordsPerPage: '3-5 sentences, 20-50 words each',
+    totalWordRange: '500-1,200 words total',
+    sentenceRules: 'Varied sentence structures. Descriptive adjectives and adverbs. Grade-appropriate vocabulary (curious, discover, enormous). Clear cause-and-effect.',
   },
   {
+    // Parent Read-Aloud / Advanced — ages 11-12 or parent reading to younger child.
+    // Benchmark: Peter Rabbit range (27 pages, ~36 words/page, 969 words).
     tier: 5,
     name: 'Advanced',
-    lexileRange: '900-1100L',
+    lexileRange: '700-900L',
     targetAge: 'Ages 11-12',
-    wordsPerPage: '5-6 sentences, 15-20 words each',
-    sentenceRules: 'Subordinate clauses. Literary devices.',
+    targetPages: 32,
+    pageRange: '28-32 pages',
+    wordsPerPage: '4-6 sentences, 30-70 words each',
+    totalWordRange: '800-2,000 words total',
+    sentenceRules: 'Rich vocabulary. Complex sentence structures. Multi-syllable words fine. Internal character thoughts. Subordinate clauses and literary devices welcome.',
   },
 ]
 

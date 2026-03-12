@@ -16,17 +16,17 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const { byokKeys, saveByokKeys } = useSession()
 
   const [anthropicKey, setAnthropicKey] = useState('')
-  const [ideogramKey, setIdeogramKey] = useState('')
+  const [replicateKey, setReplicateKey] = useState('')
   const [saved, setSaved] = useState(false)
 
   // Sync local state when drawer opens
   useEffect(() => {
     if (isOpen) {
       setAnthropicKey(byokKeys.anthropicKey)
-      setIdeogramKey(byokKeys.ideogramKey)
+      setReplicateKey(byokKeys.replicateKey)
       setSaved(false)
     }
-  }, [isOpen, byokKeys.anthropicKey, byokKeys.ideogramKey])
+  }, [isOpen, byokKeys.anthropicKey, byokKeys.replicateKey])
 
   // Trap focus and close on Escape
   useEffect(() => {
@@ -43,7 +43,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   }, [isOpen, onClose])
 
   const handleSave = () => {
-    saveByokKeys(anthropicKey.trim(), ideogramKey.trim())
+    saveByokKeys(anthropicKey.trim(), replicateKey.trim())
     setSaved(true)
     setTimeout(() => {
       setSaved(false)
@@ -53,7 +53,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
   const hasChanges =
     anthropicKey.trim() !== byokKeys.anthropicKey ||
-    ideogramKey.trim() !== byokKeys.ideogramKey
+    replicateKey.trim() !== byokKeys.replicateKey
 
   return (
     <>
@@ -131,29 +131,29 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
             </a>
           </div>
 
-          {/* Ideogram key */}
+          {/* Replicate key */}
           <div className="flex flex-col gap-2">
             <Input
-              id="ideogram-key"
-              label="Ideogram API Key"
-              value={ideogramKey}
-              onChange={setIdeogramKey}
+              id="replicate-key"
+              label="Replicate API Token"
+              value={replicateKey}
+              onChange={setReplicateKey}
               type="password"
-              placeholder="Your Ideogram key..."
-              hint="Used for illustration generation"
+              placeholder="r8_..."
+              hint="Used for character-consistent illustrations"
             />
             <a
-              href="https://ideogram.ai/manage-api"
+              href="https://replicate.com/account/api-tokens"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-amber-600 hover:text-amber-700 underline"
             >
-              Get a free Ideogram key
+              Get a free Replicate token
             </a>
           </div>
 
           {/* Current key status */}
-          {(byokKeys.anthropicKey || byokKeys.ideogramKey) && (
+          {(byokKeys.anthropicKey || byokKeys.replicateKey) && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
               <p className="font-semibold">Keys saved</p>
               <p className="text-green-700 mt-1">

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { TierSelector } from './TierSelector'
 import { ThemeSuggestions } from './ThemeSuggestions'
+import { CharacterPicker } from './CharacterPicker'
 import { useSession } from '@/context/SessionContext'
 import { getDefaultTier, nudgeTier, getTierByNumber } from '@/lib/lexile'
 import type { LexileTier } from '@/types/index'
@@ -21,6 +22,7 @@ const PRONOUN_OPTIONS = [
 ] as const
 
 interface FormErrors {
+  characterId?: string
   childName?: string
   theme?: string
 }
@@ -30,6 +32,7 @@ export function BookForm() {
   const { sessionId, usageCount, usageLimit, hasKeys, byokKeys, openByokModal } = useSession()
 
   // Form state
+  const [characterId, setCharacterId] = useState<string | null>(null)
   const [childName, setChildName] = useState('')
   const [age, setAge] = useState<number>(7)
   const [theme, setTheme] = useState('')
@@ -55,6 +58,9 @@ export function BookForm() {
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {}
+    if (!characterId) {
+      newErrors.characterId = 'Please pick a character for the story.'
+    }
     if (!childName.trim()) {
       newErrors.childName = "Please enter the child's name."
     } else if (childName.trim().length > 30) {
@@ -94,7 +100,7 @@ export function BookForm() {
     // Send BYOK keys if available
     if (hasKeys) {
       headers['x-anthropic-key'] = byokKeys.anthropicKey
-      headers['x-ideogram-key'] = byokKeys.ideogramKey
+      headers['x-replicate-key'] = byokKeys.replicateKey
     }
 
     try {
@@ -103,6 +109,7 @@ export function BookForm() {
         headers,
         body: JSON.stringify({
           sessionId,
+          characterId,
           childName: childName.trim(),
           age,
           tier: tierNumber,
@@ -121,7 +128,7 @@ export function BookForm() {
 
       if (res.status === 401) {
         const data = await res.json().catch(() => ({}))
-        const keyName = data.failedKey === 'ideogram' ? 'Ideogram' : 'Anthropic'
+        const keyName = data.failedKey === 'replicate' ? 'Replicate' : 'Anthropic'
         setSubmitError(
           `Your ${keyName} API key is invalid or expired. Please update it in Settings.`
         )
@@ -149,6 +156,17 @@ export function BookForm() {
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-xl mx-auto">
+      {/* Character picker */}
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium text-gray-700">
+          Choose a character <span className="text-amber-600 ml-0.5" aria-hidden="true">*</span>
+        </p>
+        <CharacterPicker selected={characterId} onChange={setCharacterId} />
+        {errors.characterId && (
+          <p className="text-sm text-red-600">{errors.characterId}</p>
+        )}
+      </div>
+
       {/* Child's name */}
       <Input
         id="child-name"

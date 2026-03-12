@@ -12,8 +12,8 @@ interface SessionContextValue {
   usageLimit: number
   byokRequired: boolean
   hasKeys: boolean
-  byokKeys: { anthropicKey: string; ideogramKey: string }
-  saveByokKeys: (anthropicKey: string, ideogramKey: string) => void
+  byokKeys: { anthropicKey: string; replicateKey: string }
+  saveByokKeys: (anthropicKey: string, replicateKey: string) => void
   refreshUsage: () => Promise<void>
   // Settings drawer state (lifted here so GearIcon and SettingsDrawer can share it)
   isSettingsOpen: boolean

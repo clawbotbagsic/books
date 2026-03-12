@@ -17,21 +17,21 @@ export function ByokModal({ isOpen, onClose }: ByokModalProps) {
   const { byokKeys, saveByokKeys, openSettings } = useSession()
 
   const [anthropicKey, setAnthropicKey] = useState('')
-  const [ideogramKey, setIdeogramKey] = useState('')
+  const [replicateKey, setReplicateKey] = useState('')
   const [saved, setSaved] = useState(false)
 
   // Reset inputs when modal opens
   useEffect(() => {
     if (isOpen) {
       setAnthropicKey(byokKeys.anthropicKey)
-      setIdeogramKey(byokKeys.ideogramKey)
+      setReplicateKey(byokKeys.replicateKey)
       setSaved(false)
     }
-  }, [isOpen, byokKeys.anthropicKey, byokKeys.ideogramKey])
+  }, [isOpen, byokKeys.anthropicKey, byokKeys.replicateKey])
 
   const handleSave = () => {
-    if (!anthropicKey.trim() || !ideogramKey.trim()) return
-    saveByokKeys(anthropicKey.trim(), ideogramKey.trim())
+    if (!anthropicKey.trim() || !replicateKey.trim()) return
+    saveByokKeys(anthropicKey.trim(), replicateKey.trim())
     setSaved(true)
     setTimeout(() => {
       onClose()
@@ -43,7 +43,7 @@ export function ByokModal({ isOpen, onClose }: ByokModalProps) {
     openSettings()
   }
 
-  const canSave = anthropicKey.trim() !== '' && ideogramKey.trim() !== ''
+  const canSave = anthropicKey.trim() !== '' && replicateKey.trim() !== ''
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} dismissible maxWidth="md">
@@ -96,20 +96,20 @@ export function ByokModal({ isOpen, onClose }: ByokModalProps) {
 
           <div className="flex flex-col gap-2">
             <Input
-              id="byok-ideogram-key"
-              label="Ideogram API Key"
-              value={ideogramKey}
-              onChange={setIdeogramKey}
+              id="byok-replicate-key"
+              label="Replicate API Token"
+              value={replicateKey}
+              onChange={setReplicateKey}
               type="password"
-              placeholder="Your Ideogram key..."
+              placeholder="r8_..."
             />
             <a
-              href="https://ideogram.ai/manage-api"
+              href="https://replicate.com/account/api-tokens"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-amber-600 hover:text-amber-700 underline"
             >
-              Get a free Ideogram key
+              Get a free Replicate token
             </a>
           </div>
         </div>

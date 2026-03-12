@@ -5,23 +5,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { waitUntil } from '@vercel/functions'
 import { z } from 'zod'
 import { generateStory } from '@/lib/anthropic'
-import { generateCharacterAnchor, callConsistentCharacter } from '@/lib/replicate'
+import { callConsistentCharacter } from '@/lib/replicate'
 import { uploadImage } from '@/lib/storage'
 import { getTierByNumber } from '@/lib/lexile'
 import { getSupabase } from '@/lib/supabase'
 import { themeContainsProfanity, storyContainsProfanity } from '@/lib/profanity'
+import { getCharacter } from '@/lib/characters'
 
 export const maxDuration = 300
 
 const RequestSchema = z.object({
-  sessionId: z.string().min(1, 'sessionId is required'),
-  childName: z.string().min(1).max(30, 'Child name must be 30 characters or less'),
-  age: z.number().int().min(3).max(8),
-  tier: z.number().int().min(1).max(3),
-  theme: z.string().min(1).max(100, 'Theme must be 100 characters or less'),
-  readMode: z.enum(['aloud', 'independent']).optional().default('aloud'),
-  pronouns: z.enum(['he/him', 'she/her', 'they/them']),
-  sidekick: z.string().max(50, 'Sidekick must be 50 characters or less').optional(),
+  sessionId:   z.string().min(1, 'sessionId is required'),
+  characterId: z.string().min(1, 'characterId is required'),
+  childName:   z.string().min(1).max(30, 'Child name must be 30 characters or less'),
+  age:         z.number().int().min(3).max(8),
+  tier:        z.number().int().min(1).max(3),
+  theme:       z.string().min(1).max(100, 'Theme must be 100 characters or less'),
+  readMode:    z.enum(['aloud', 'independent']).optional().default('aloud'),
+  pronouns:    z.enum(['he/him', 'she/her', 'they/them']),
+  sidekick:    z.string().max(50, 'Sidekick must be 50 characters or less').optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -41,7 +43,13 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { sessionId, childName, age, tier: tierNumber, theme, readMode, pronouns, sidekick } = parsed.data
+  const { sessionId, characterId, childName, age, tier: tierNumber, theme, readMode, pronouns, sidekick } = parsed.data
+
+  // Validate character exists
+  const character = getCharacter(characterId)
+  if (!character) {
+    return NextResponse.json({ error: `Unknown character: ${characterId}` }, { status: 400 })
+  }
 
   // ── Input gate: profanity check on user-supplied theme ────────────────────
   try {
@@ -107,12 +115,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Invalid tier: ${tierNumber}` }, { status: 400 })
   }
 
-  const bookInput = { sessionId, childName, age, tier: tierNumber as 1 | 2 | 3 | 4 | 5, theme, readMode: parsed.data.readMode ?? 'aloud', pronouns, sidekick }
+  const bookInput = { sessionId, characterId, childName, age, tier: tierNumber as 1 | 2 | 3 | 4 | 5, theme, readMode: parsed.data.readMode ?? 'aloud', pronouns, sidekick }
 
   // ── PASS 1: Story Generation ──────────────────────────────────────────────
   let storyJSON
   try {
-    storyJSON = await generateStory(anthropicKey, bookInput, tierObj)
+    storyJSON = await generateStory(anthropicKey, bookInput, tierObj, character.storyDescription)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     console.error('[generate] Story generation failed:', err)
@@ -209,7 +217,7 @@ export async function POST(request: NextRequest) {
   // ── PASS 2: Image Generation — fire-and-forget so client gets UUID immediately ──
 console.log('[generate] Starting background image generation for', bookUuid)
 waitUntil(
-  generateImages(supabase, bookUuid, storyJSON, replicateKey, usingByok, age)
+  generateImages(supabase, bookUuid, storyJSON, replicateKey, usingByok, character.anchorUrl)
     .then(() => console.log('[generate] Image generation complete for', bookUuid))
     .catch(err => console.error('[generate] Background image generation failed:', err))
 )
@@ -234,7 +242,7 @@ async function generateImages(
   storyJSON: any,
   replicateKey: string,
   usingByok: boolean,
-  age: number
+  anchorUrl: string   // pre-made character anchor — no Phase 1 needed
 ): Promise<void> {
   const imageUrls: (string | null)[] = new Array(storyJSON.pages.length).fill(null)
   let authFailed = false
@@ -242,20 +250,7 @@ async function generateImages(
   // Fix seed per book so art style is consistent across all pages
   const bookSeed = Math.floor(Math.random() * 2_147_483_647)
 
-  // ── Phase 1: Generate character anchor ─────────────────────────────────────
-  let anchorUrl: string
-  try {
-    console.log('[generate] Generating character anchor for', bookUuid)
-    anchorUrl = await generateCharacterAnchor(replicateKey, storyJSON.character_description, age)
-    console.log('[generate] Anchor ready:', anchorUrl)
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[generate] Anchor generation failed:', err)
-    if (message.includes('401')) {
-      await supabase.from('books').update({ status: 'failed' }).eq('uuid', bookUuid)
-    }
-    return
-  }
+  console.log('[generate] Using pre-made anchor for', bookUuid, '→', anchorUrl)
 
   // ── Phase 2: Per-page generation ───────────────────────────────────────────
   for (let batchStart = 0; batchStart < storyJSON.pages.length; batchStart += IMAGE_BATCH_SIZE) {

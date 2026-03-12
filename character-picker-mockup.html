@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inklings — Character Picker Design</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fdf8f0; color: #1c1917; }
+
+  .screen { max-width: 680px; margin: 0 auto; padding: 40px 24px 80px; }
+  .step-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #d97706; margin-bottom: 12px; }
+  h1 { font-size: 30px; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+  .subtitle { font-size: 16px; color: #78716c; margin-bottom: 36px; line-height: 1.5; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+
+  .char-card {
+    background: white;
+    border: 2.5px solid #e7e5e4;
+    border-radius: 16px;
+    padding: 16px 12px 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+  .char-card:hover { border-color: #fbbf24; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.09); }
+  .char-card.selected { border-color: #f59e0b; background: #fffbeb; box-shadow: 0 0 0 3px #fde68a; }
+  .char-card.selected .checkmark { display: flex; }
+
+  .checkmark {
+    display: none;
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 20px; height: 20px;
+    background: #f59e0b;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: white;
+    font-weight: 800;
+  }
+
+  .emoji { font-size: 42px; margin-bottom: 10px; line-height: 1; }
+  .char-name { font-size: 14px; font-weight: 700; color: #1c1917; margin-bottom: 3px; }
+  .char-species { font-size: 11px; color: #a8a29e; font-weight: 500; }
+
+  .cta-area { text-align: center; }
+  .btn {
+    background: #f59e0b;
+    color: white;
+    font-size: 17px;
+    font-weight: 700;
+    padding: 16px 48px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-block;
+  }
+  .btn:hover { background: #d97706; transform: translateY(-1px); }
+  .btn:disabled { background: #d6d3d1; cursor: not-allowed; transform: none; }
+
+  .selected-hint { font-size: 14px; color: #78716c; margin-top: 14px; min-height: 20px; }
+
+  .progress-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 32px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #e7e5e4; }
+  .dot.active { background: #f59e0b; width: 24px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- Progress -->
+  <div class="progress-dots">
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+
+  <div class="step-label">Step 1 of 4</div>
+  <h1>Pick your character</h1>
+  <p class="subtitle">This creature will star in the story — with your child's name.</p>
+
+  <div class="grid">
+
+    <div class="char-card selected" onclick="pick(this, 'zib', 'Zib')">
+      <div class="checkmark">✓</div>
+      <div class="emoji">🛸</div>
+      <div class="char-name">Zib</div>
+      <div class="char-species">Little Alien</div>
+    </div>
+
+    <div class="char-card" onclick="pick(this, 'ember', 'Ember')">
+      <div class="checkmark">✓</div>
+      <div class="emoji">🐉</div>
+      <div class="char-name">Ember</div>
+      <div class="char-species">Baby Dragon</div>
+    </div>
+
+    <div class="char-card" onclick="pick(this, 'pip', 'Pip')">
+      <div class="checkmark">✓</div>
+      <div class="emoji">🦕</div>
+      <div class="char-name">Pip</div>
+      <div class="char-species">Baby Dino</div>
+    </div>
+
+    <div class="char-card" onclick="pick(this, 'boo', 'Boo')">
+      <div class="checkmark">✓</div>
+      <div class="emoji">☁️</div>
+      <div class="char-name">Boo</div>
+      <div class="char-species">Cloud Sprite</div>
+    </div>
+
+    <div class="char-card" onclick="pick(this, 'cog', 'Cog')">
+      <div class="checkmark">✓</div>
+      <div class="emoji">🤖</div>
+      <div class="char-name">Cog</div>
+      <div class="char-species">Tiny Robot</div>
+    </div>
+
+    <div class="char-card" onclick="pick(this, 'fern', 'Fern')">
+      <div class="checkmark">✓</div>
+      <div class="emoji">🦊</div>
+      <div class="char-name">Fern</div>
+      <div class="char-species">Forest Fox</div>
+    </div>
+
+    <div class="char-card" onclick="pick(this, 'mochi', 'Mochi')">
+      <div class="checkmark">✓</div>
+      <div class="emoji">🐻</div>
+      <div class="char-name">Mochi</div>
+      <div class="char-species">Magic Bear</div>
+    </div>
+
+    <div class="char-card" onclick="pick(this, 'lumi', 'Lumi')">
+      <div class="checkmark">✓</div>
+      <div class="emoji">✨</div>
+      <div class="char-name">Lumi</div>
+      <div class="char-species">Star Sprite</div>
+    </div>
+
+  </div>
+
+  <div class="cta-area">
+    <button class="btn" id="nextBtn">Choose Zib →</button>
+    <p class="selected-hint" id="hint">Zib the Little Alien will star in your story</p>
+  </div>
+
+</div>
+
+<script>
+  let selected = { id: 'zib', name: 'Zib' };
+  function pick(el, id, name) {
+    document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selected = { id, name };
+    document.getElementById('nextBtn').textContent = `Choose ${name} →`;
+    document.getElementById('hint').textContent = `${name} will star in your story`;
+  }
+</script>
+</body>
+</html>
