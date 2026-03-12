@@ -175,9 +175,10 @@ export async function POST(request: NextRequest) {
   })()
 
   // ── PASS 2: Image Generation — fire-and-forget so client gets UUID immediately ──
-  generateImages(supabase, bookUuid, storyJSON, ideogramKey, usingByok).catch(err => {
-    console.error('[generate] Background image generation failed:', err)
-  })
+console.log('[generate] Starting background image generation for', bookUuid)
+  generateImages(supabase, bookUuid, storyJSON, ideogramKey, usingByok)
+    .then(() => console.log('[generate] Image generation complete for', bookUuid))
+    .catch(err => console.error('[generate] Background image generation failed:', err))
 
   // Return UUID immediately — client polls /api/book/[uuid] for progress
   return NextResponse.json({ uuid: bookUuid, status: 'generating' })

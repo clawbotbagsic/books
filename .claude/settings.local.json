@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes 2>&1)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm run:*)",
+      "Bash(npm list:*)",
+      "Bash(cd \"C:/Users/Kevin/Projects/books\" && npx tsc --noEmit 2>&1 | head -30)",
+      "Bash(cd \"C:/Users/Kevin/Projects/books\" && npx tsc --noEmit 2>&1)",
+      "Bash(git -C /c/Users/Kevin/Projects/books check-ignore -v .env.local 2>&1; cat /c/Users/Kevin/Projects/books/.env.local.example)",
+      "Bash(git -C /c/Users/Kevin/Projects/books ls-files --others --exclude-standard | head -20; git -C /c/Users/Kevin/Projects/books ls-files --ignored --exclude-standard | grep -i env)",
+      "Bash(git -C /c/Users/Kevin/Projects/books cat-file -t HEAD:.gitignore 2>&1 || echo \"NO .gitignore COMMITTED\"; git -C /c/Users/Kevin/Projects/books ls-files | grep -i \"\\\\.env\" 2>&1)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next:*)",
+      "Bash(ls /c/Users/Kevin/Projects/books/scripts/ && cat /c/Users/Kevin/Projects/books/scripts/*.sql 2>/dev/null || echo \"No SQL files in scripts\")",
+      "Bash(git add:*)"
+    ]
+  }
+}
