@@ -192,9 +192,9 @@ return NextResponse.json({ uuid: bookUuid, status: 'generating' })
 // Phase 1: Generate character anchor image from character_description (1 call)
 // Phase 2: Generate per-page illustrations using anchor as subject reference
 //
-// Fire all pages concurrently — endpoint bug is fixed, no reason to throttle.
-// Replicate queues excess requests gracefully; 2s inter-batch delay removed.
-const IMAGE_BATCH_SIZE = 14
+// sdxl-based/consistent-character has ~10 concurrent prediction limit per account.
+// Batch of 5 avoids hitting it — 3 batches × ~25s = ~75s total, well within limits.
+const IMAGE_BATCH_SIZE = 5
 
 async function generateImages(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
