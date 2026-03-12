@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { waitUntil } from '@vercel/functions'
 import { z } from 'zod'
 import { generateStory } from '@/lib/anthropic'
-import { callConsistentCharacter } from '@/lib/replicate'
+import { generatePageImage } from '@/lib/replicate'
 import { uploadImage } from '@/lib/storage'
 import { getTierByNumber } from '@/lib/lexile'
 import { getSupabase } from '@/lib/supabase'
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
   // ── PASS 2: Image Generation — fire-and-forget so client gets UUID immediately ──
 console.log('[generate] Starting background image generation for', bookUuid)
 waitUntil(
-  generateImages(supabase, bookUuid, storyJSON, replicateKey, usingByok, character.anchorUrl)
+  generateImages(supabase, bookUuid, storyJSON, replicateKey, usingByok, character.storyDescription)
     .then(() => console.log('[generate] Image generation complete for', bookUuid))
     .catch(err => console.error('[generate] Background image generation failed:', err))
 )
@@ -242,7 +242,7 @@ async function generateImages(
   storyJSON: any,
   replicateKey: string,
   usingByok: boolean,
-  anchorUrl: string   // pre-made character anchor — no Phase 1 needed
+  characterDescription: string  // injected into every page prompt for consistency
 ): Promise<void> {
   const imageUrls: (string | null)[] = new Array(storyJSON.pages.length).fill(null)
   let authFailed = false
@@ -250,7 +250,7 @@ async function generateImages(
   // Fix seed per book so art style is consistent across all pages
   const bookSeed = Math.floor(Math.random() * 2_147_483_647)
 
-  console.log('[generate] Using pre-made anchor for', bookUuid, '→', anchorUrl)
+  console.log('[generate] Using character description for', bookUuid)
 
   // ── Phase 2: Per-page generation ───────────────────────────────────────────
   for (let batchStart = 0; batchStart < storyJSON.pages.length; batchStart += IMAGE_BATCH_SIZE) {
@@ -268,9 +268,9 @@ async function generateImages(
 
           let replicateUrl: string
           try {
-            replicateUrl = await callConsistentCharacter(
+            replicateUrl = await generatePageImage(
               replicateKey,
-              anchorUrl,
+              characterDescription,
               page.image_prompt,
               bookSeed
             )
