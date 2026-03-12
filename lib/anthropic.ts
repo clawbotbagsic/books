@@ -122,7 +122,7 @@ Write it as a precise, concrete visual description (3-5 sentences) covering:
 - Any unique distinguishing feature (glasses, freckles, a specific accessory)
 
 Do NOT include clothing in the character_description — clothing is locked separately and injected into image prompts automatically. Do NOT use abstract traits ("looks friendly," "seems adventurous"). Only concrete visuals that an illustrator could draw from.${input.sidekick ? `
-- Also include a concrete visual description of ${input.sidekick} — species/type, coloring, size, any distinguishing markings or features.` : ''}
+- CRITICAL: Include a hyper-specific visual description of ${input.sidekick} (3-4 sentences). Specify: exact breed or species, exact fur/skin color and pattern, size relative to the child, ear shape, tail type, eye color, and any unique markings. This description is the ONLY thing keeping ${input.sidekick} looking the same across 10 illustrations. Vague descriptions like "small white dog" will produce a different animal on every page.` : ''}
 
 ## IMAGE PROMPTS (SCENE DESCRIPTIONS FOR ILLUSTRATION)
 
@@ -134,6 +134,7 @@ Each page includes an \`image_prompt\` field. This is sent directly to an image 
 - Describe lighting and atmosphere: "golden afternoon sunlight streaming through the trees" or "dark cave lit only by a glowing crystal"
 - Describe environment in detail: specific plants, weather, architecture, objects in the scene
 - Do NOT include character physical description or clothing — those are appended automatically
+- Do NOT re-describe the sidekick's appearance (color, breed, size, markings). Refer to the sidekick by NAME ONLY (e.g. "${input.sidekick || 'Buddy'}"). The sidekick's full visual description is in character_description and gets prepended automatically. Re-describing it with different words causes the illustrator to draw a different animal on each page.
 - Keep each image_prompt to 3-5 sentences. More detail = better illustrations.
 
 Example image_prompt: "Wide shot of a mossy underground cavern with a glowing turquoise river running through it. ${input.childName} crouches on a flat rock at the river's edge, reaching toward a floating crystal just out of arm's reach. ${pronouns.possessive} face shows intense concentration, tongue slightly out, one eye squinted.${input.sidekick ? ` ${input.sidekick} stands behind ${pronouns.object} with ears perked and tail mid-wag, ready to pounce.` : ''} Bioluminescent blue-green light reflects off the cavern walls and water surface. Low angle looking up at ${input.childName} to make ${pronouns.object} look heroic."
