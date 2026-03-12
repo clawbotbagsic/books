@@ -36,7 +36,7 @@ export function ShareBanner({ bookUuid }: ShareBannerProps) {
   }, [bookUrl])
 
   return (
-    <div className="mx-auto w-full max-w-lg bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col gap-3 text-center">
+    <div className="mx-auto w-full max-w-lg bg-white/10 border border-white/20 rounded-2xl p-5 flex flex-col gap-3 text-center backdrop-blur-sm">
       <div className="flex items-center justify-center gap-2">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -46,21 +46,21 @@ export function ShareBanner({ bookUuid }: ShareBannerProps) {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="w-5 h-5 text-amber-600"
+          className="w-5 h-5 text-amber-400"
           aria-hidden="true"
         >
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
         </svg>
-        <p className="font-semibold text-gray-800">Save this link</p>
+        <p className="font-semibold text-white">Save this link</p>
       </div>
 
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-white/70">
         Your book lives here for 30 days. Copy the link to come back anytime.
       </p>
 
       {/* URL display */}
-      <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-500 break-all">
+      <div className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm text-white/60 break-all">
         <span id="share-url">{bookUrl}</span>
       </div>
 

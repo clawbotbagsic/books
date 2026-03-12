@@ -29,7 +29,7 @@ export function PageCounter({ currentPage, totalPages }: PageCounterProps) {
       </div>
 
       {/* Text counter */}
-      <span className="text-sm font-medium text-gray-500 ml-1">
+      <span className="text-sm font-medium text-white/60 ml-1">
         {currentPage} / {totalPages}
       </span>
     </div>

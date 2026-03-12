@@ -82,23 +82,23 @@ export function BookReader({ book }: BookReaderProps) {
 
   return (
     <div
-      className="flex flex-col h-screen bg-white overflow-hidden"
+      className="flex flex-col h-screen bg-black overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* Book title bar */}
-      <div className="flex-none flex items-center justify-between px-4 py-2 border-b border-gray-100 bg-white">
+      <div className="flex-none flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/90 backdrop-blur-sm">
         <div>
-          <h1 className="text-sm font-semibold text-gray-800 leading-tight">
+          <h1 className="text-sm font-semibold text-white leading-tight">
             {book.childName}&apos;s Story
           </h1>
-          <p className="text-xs text-gray-400">{book.theme}</p>
+          <p className="text-xs text-white/60">{book.theme}</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Home link */}
           <a
             href="/"
-            className="text-xs text-amber-600 hover:text-amber-700 font-medium px-2 py-1"
+            className="text-xs text-amber-400 hover:text-amber-300 font-medium px-2 py-1"
             aria-label="Create a new book"
           >
             Create new book
@@ -131,10 +131,10 @@ export function BookReader({ book }: BookReaderProps) {
           className={[
             'absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11',
             'flex items-center justify-center rounded-full',
-            'bg-white/80 shadow-md border border-gray-200 backdrop-blur-sm',
+            'bg-black/50 shadow-md border border-white/20 backdrop-blur-sm',
             'transition-opacity duration-200',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500',
-            isFirstPage ? 'opacity-0 pointer-events-none' : 'opacity-100 hover:bg-white',
+            isFirstPage ? 'opacity-0 pointer-events-none' : 'opacity-100 hover:bg-black/70',
           ].join(' ')}
         >
           <svg
@@ -145,7 +145,7 @@ export function BookReader({ book }: BookReaderProps) {
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="w-5 h-5 text-gray-700"
+            className="w-5 h-5 text-white"
             aria-hidden="true"
           >
             <polyline points="15 18 9 12 15 6" />
@@ -159,10 +159,10 @@ export function BookReader({ book }: BookReaderProps) {
           className={[
             'absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11',
             'flex items-center justify-center rounded-full',
-            'bg-white/80 shadow-md border border-gray-200 backdrop-blur-sm',
+            'bg-black/50 shadow-md border border-white/20 backdrop-blur-sm',
             'transition-opacity duration-200',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500',
-            isLastPage ? 'opacity-0 pointer-events-none' : 'opacity-100 hover:bg-white',
+            isLastPage ? 'opacity-0 pointer-events-none' : 'opacity-100 hover:bg-black/70',
           ].join(' ')}
         >
           <svg
@@ -173,7 +173,7 @@ export function BookReader({ book }: BookReaderProps) {
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="w-5 h-5 text-gray-700"
+            className="w-5 h-5 text-white"
             aria-hidden="true"
           >
             <polyline points="9 18 15 12 9 6" />
@@ -182,7 +182,7 @@ export function BookReader({ book }: BookReaderProps) {
       </div>
 
       {/* Bottom bar: page counter + share banner on last page */}
-      <div className="flex-none px-4 py-3 border-t border-gray-100 bg-white">
+      <div className="flex-none px-4 py-3 border-t border-white/10 bg-black/90 backdrop-blur-sm">
         {isLastPage ? (
           <div className="flex flex-col gap-3 items-center">
             <ShareBanner bookUuid={book.uuid} />

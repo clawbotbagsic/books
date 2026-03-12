@@ -173,14 +173,14 @@ The description is appended verbatim by `buildImagePrompt()` in `ideogram.ts`. C
 
 The `image_prompt` per page is a scene brief, not a character brief. Character appearance is excluded here because it is appended automatically. This separation is intentional:
 - Claude writes 10 different scene descriptions (varying action, setting, emotion)
-- `buildImagePrompt()` prepends the art style prefix and appends the character description
+- `buildImagePrompt()` assembles: scene description → character anchor → character description → art style anchor
 
-The art style prefix (`ART_STYLE_PREFIX` in `ideogram.ts`):
+The art style anchor (`ART_STYLE_ANCHOR` in `ideogram.ts`):
 ```
-children's book illustration, watercolor and colored pencil, warm colors, soft edges, white background
+Digital illustration, warm saturated colors, soft diffused lighting, children's picture book style, Studio Ghibli-inspired watercolor textures, slightly rounded character proportions, expressive faces, rich environmental detail, full scene composition
 ```
 
-This is prepended to every image prompt before the character description and scene description. The `magic_prompt_option: 'OFF'` Ideogram setting is intentional — we do not want Ideogram rewriting the prompt, which would break character consistency.
+A hardcoded character anchor (Chinese boy, red hoodie, blue sneakers) is injected into every image prompt for visual consistency. The `magic_prompt_option: 'OFF'` Ideogram setting is intentional — we do not want Ideogram rewriting the prompt, which would break character consistency.
 
 ### Output Schema
 

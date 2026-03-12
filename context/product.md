@@ -50,11 +50,11 @@ Teachers and librarians discovering the tool for classroom personalization. Not 
 **What happens:**
 Two-pass AI generation.
 
-Pass 1 — Story Generation (Claude Sonnet):
+Pass 1 — Story Generation (Claude Opus):
 System prompt encodes the Lexile tier constraints (words per page, sentence complexity, vocabulary grade level) for the selected tier, the child's inputs, and a JSON output schema. Claude returns a 10-page story as structured JSON. Each page object contains: `page_number`, `text`, `image_prompt`. Claude writes a shared physical character description and appends it to every image prompt for visual consistency. JSON is validated; one retry on malformed output.
 
 Pass 2 — Image Generation (Ideogram v3):
-Each of the 10 image prompts is prefixed with the fixed style string: "children's book illustration, watercolor and colored pencil, warm colors, soft edges, white background." Images generated sequentially (rate limit control). Aspect ratio: 4:3 landscape. Images stored in Supabase Storage tied to book UUID.
+Each of the 10 image prompts is prefixed with the fixed style string: "Digital illustration, warm saturated colors, soft diffused lighting, children's picture book style, Studio Ghibli-inspired watercolor textures, slightly rounded character proportions, expressive faces, rich environmental detail, full scene composition." A hardcoded character anchor (Chinese boy, red hoodie, blue sneakers) and signature outfit are injected into every image prompt for visual consistency. Images generated sequentially (rate limit control). Aspect ratio: 4:3 landscape. Images stored in Supabase Storage tied to book UUID.
 
 Completed book stored in Supabase as JSON record keyed to UUID. Accessible at books.tunedfor.ai/book/[uuid] for 30 days, then purged.
 
@@ -130,7 +130,7 @@ Fixed art style: "children's book illustration, watercolor and colored pencil, w
 
 | Component | Cost | Unit |
 |-----------|------|------|
-| Claude Sonnet — story generation | ~$0.003 | Per book (estimated ~1500 input tokens, ~800 output tokens) |
+| Claude Opus — story generation | ~$0.003 | Per book (estimated ~1500 input tokens, ~800 output tokens) |
 | Ideogram v3 — illustrations | ~$0.08-0.10 | Per image ($0.80-1.00 per 10-image book) |
 | Supabase Storage — image hosting | ~$0.021 | Per GB (negligible per book at ~2MB per image = ~20MB/book) |
 | Supabase DB — book record | Negligible | Free tier covers Phase 1 volume |
@@ -221,3 +221,8 @@ The 5-tier Lexile system makes this educationally defensible, not just cute. Par
 | 2026-03-11 | QA acceptance: all 10 pages have text + image, child's name in story, clear story arc | No automated Lexile validation in Phase 1. System prompt is the quality gate. |
 | 2026-03-11 | Vercel Pro with maxDuration = 300 on all API routes | Full generation takes 60-120s. Pro tier eliminates timeout issues. No need for split client-driven architecture. |
 | 2026-03-11 | Optional pet/sidekick field on creation form | Kids love animal companions. Makes stories more engaging. Optional to keep the form simple. |
+| 2026-03-12 | Story model: Sonnet → Opus | Richer narratives, better franchise energy, worth the cost increase. |
+| 2026-03-12 | Reader layout: side-by-side → full-bleed with text overlay | Picture book standard. Image IS the page, text floats on a gradient strip. |
+| 2026-03-12 | Story prompt: added page arc, franchise voice, catchphrases, cinematographic image prompts | Storytelling quality was generic. New prompt produces TV-quality story arcs. |
+| 2026-03-12 | Character consistency: locked anchor (Chinese boy, red hoodie, blue sneakers) + art style injected on every image | Ideogram has no memory across pages. Hardcoded anchor + style string is the consistency cheat code. |
+| 2026-03-12 | Reader dark theme | Full-bleed images need dark chrome, not white. |

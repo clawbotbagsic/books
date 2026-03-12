@@ -26,14 +26,26 @@ export function getIdeogramKey(req: Request): string {
   return key
 }
 
-export const ART_STYLE_PREFIX =
-  "children's book illustration, watercolor and colored pencil, warm colors, soft edges, white background"
+export const ART_STYLE_ANCHOR =
+  'Digital illustration, warm saturated colors, soft diffused lighting, children\'s picture book style, Studio Ghibli-inspired watercolor textures, slightly rounded character proportions, expressive faces, rich environmental detail, full scene composition'
+
+export const SIGNATURE_OUTFIT =
+  'The child hero wears a bright red hoodie with a small gold star on the chest, dark blue jeans, and blue sneakers with white soles.'
+
+export const NEGATIVE_PROMPT =
+  'photorealistic, 3D render, dark, scary, violent, text, words, letters, watermark, signature, logo, blurry, low quality'
+
+export function buildCharacterAnchor(childAge: number): string {
+  return `The child hero is a Chinese boy, approximately ${childAge} years old, slim build, short straight black hair, warm brown eyes, round friendly face, light skin. ${SIGNATURE_OUTFIT} Consistent character throughout — same face, same hair, same build, same outfit on every page.`
+}
 
 export function buildImagePrompt(
+  sceneDescription: string,
   characterDescription: string,
-  pageImagePrompt: string
+  childAge: number
 ): string {
-  return `${ART_STYLE_PREFIX}. ${characterDescription} ${pageImagePrompt}`
+  const characterAnchor = buildCharacterAnchor(childAge)
+  return `${sceneDescription}\n\n${characterAnchor}\n\n${characterDescription}\n\n${ART_STYLE_ANCHOR}`
 }
 
 export async function callIdeogram(
@@ -51,6 +63,7 @@ export async function callIdeogram(
       body: JSON.stringify({
         image_request: {
           prompt,
+          negative_prompt: NEGATIVE_PROMPT,
           aspect_ratio: 'ASPECT_4_3',
           model: 'V_2',
           magic_prompt_option: 'OFF',

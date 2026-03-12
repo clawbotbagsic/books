@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
   // ── PASS 2: Image Generation — fire-and-forget so client gets UUID immediately ──
 console.log('[generate] Starting background image generation for', bookUuid)
 waitUntil(
-  generateImages(supabase, bookUuid, storyJSON, ideogramKey, usingByok)
+  generateImages(supabase, bookUuid, storyJSON, ideogramKey, usingByok, bookInput.age)
     .then(() => console.log('[generate] Image generation complete for', bookUuid))
     .catch(err => console.error('[generate] Background image generation failed:', err))
 )
@@ -195,13 +195,14 @@ async function generateImages(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   storyJSON: any,
   ideogramKey: string,
-  usingByok: boolean
+  usingByok: boolean,
+  childAge: number
 ): Promise<void> {
   const imageUrls: (string | null)[] = new Array(storyJSON.pages.length).fill(null)
 
   for (let i = 0; i < storyJSON.pages.length; i++) {
     const page = storyJSON.pages[i]
-    const prompt = buildImagePrompt(storyJSON.character_description, page.image_prompt)
+    const prompt = buildImagePrompt(page.image_prompt, storyJSON.character_description, childAge)
 
     let ideogramUrl: string
     try {
