@@ -33,11 +33,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const book = await getBook(params.uuid)
 
   if (!book || book === 'expired') {
-    return { title: 'Story Spark' }
+    return { title: 'Inklings' }
   }
 
   return {
-    title: `${book.childName}'s Story — Story Spark`,
+    title: `${book.childName}'s Story — Inklings`,
     description: `A personalized illustrated book: ${book.theme}`,
   }
 }
@@ -69,7 +69,7 @@ export default async function BookPage({ params }: PageProps) {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">This book has expired</h1>
           <p className="text-gray-600 mb-6">
-            Story Spark books live for 30 days. This one has passed its expiry date.
+            Inklings books live for 30 days. This one has passed its expiry date.
           </p>
           <Link href="/">
             <Button aria-label="Create a new book">Create a New Book</Button>

@@ -18,6 +18,18 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        fredoka: ['var(--font-fredoka)', 'sans-serif'],
+        caveat: ['var(--font-caveat)', 'cursive'],
+        nunito: ['var(--font-nunito)', 'sans-serif'],
+      },
+      keyframes: {
+        'scroll-left': {
+          '0%':   { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+      },
+      animation: {
+        'scroll-left': 'scroll-left 30s linear infinite',
       },
     },
   },

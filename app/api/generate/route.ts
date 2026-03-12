@@ -1,11 +1,11 @@
 // app/api/generate/route.ts — POST: full book generation orchestration
-// Pass 1: Claude story generation → Pass 2: Ideogram image generation (fire-and-forget)
+// Pass 1: Claude story generation → Pass 2: Replicate image generation (fire-and-forget)
 
 import { NextRequest, NextResponse } from 'next/server'
 import { waitUntil } from '@vercel/functions'
 import { z } from 'zod'
 import { generateStory } from '@/lib/anthropic'
-import { callIdeogram, buildImagePrompt } from '@/lib/ideogram'
+import { generateCharacterAnchor, callConsistentCharacter } from '@/lib/replicate'
 import { uploadImage } from '@/lib/storage'
 import { getTierByNumber } from '@/lib/lexile'
 import { getSupabase } from '@/lib/supabase'
@@ -15,9 +15,10 @@ export const maxDuration = 300
 const RequestSchema = z.object({
   sessionId: z.string().min(1, 'sessionId is required'),
   childName: z.string().min(1).max(30, 'Child name must be 30 characters or less'),
-  age: z.number().int().min(3).max(12),
-  tier: z.number().int().min(1).max(5),
+  age: z.number().int().min(3).max(8),
+  tier: z.number().int().min(1).max(3),
   theme: z.string().min(1).max(100, 'Theme must be 100 characters or less'),
+  readMode: z.enum(['aloud', 'independent']).optional().default('aloud'),
   pronouns: z.enum(['he/him', 'she/her', 'they/them']),
   sidekick: z.string().max(50, 'Sidekick must be 50 characters or less').optional(),
 })
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { sessionId, childName, age, tier: tierNumber, theme, pronouns, sidekick } = parsed.data
+  const { sessionId, childName, age, tier: tierNumber, theme, readMode, pronouns, sidekick } = parsed.data
 
   // Server-side free tier enforcement and BYOK gate
   const supabaseForUsage = getSupabase()
@@ -52,35 +53,35 @@ export async function POST(request: NextRequest) {
   const currentCount = usageData?.count ?? 0
 
   const byokAnthropicKey = request.headers.get('x-anthropic-key')
-  const byokIdeogramKey = request.headers.get('x-ideogram-key')
+  const byokReplicateKey = request.headers.get('x-replicate-key')
 
   let anthropicKey: string
-  let ideogramKey: string
+  let replicateKey: string
   let usingByok: boolean
 
   if (currentCount >= 3) {
     // BYOK required — both keys must be present
-    if (!byokAnthropicKey || !byokIdeogramKey) {
+    if (!byokAnthropicKey || !byokReplicateKey) {
       return NextResponse.json(
-        { error: 'Both Anthropic and Ideogram API keys are required after 3 free books. Please add your keys in Settings.' },
+        { error: 'Both Anthropic and Replicate API keys are required after 3 free books. Please add your keys in Settings.' },
         { status: 402 }
       )
     }
     anthropicKey = byokAnthropicKey
-    ideogramKey = byokIdeogramKey
+    replicateKey = byokReplicateKey
     usingByok = true
   } else {
     // Free tier — use env vars, ignore any BYOK headers
     anthropicKey = process.env.ANTHROPIC_API_KEY ?? ''
-    ideogramKey = process.env.IDEOGRAM_API_KEY ?? ''
+    replicateKey = process.env.REPLICATE_API_TOKEN ?? ''
     usingByok = false
   }
 
   if (!anthropicKey) {
     return NextResponse.json({ error: 'No Anthropic API key available' }, { status: 401 })
   }
-  if (!ideogramKey) {
-    return NextResponse.json({ error: 'No Ideogram API key available' }, { status: 401 })
+  if (!replicateKey) {
+    return NextResponse.json({ error: 'No Replicate API token available' }, { status: 401 })
   }
 
   // Resolve Lexile tier object
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Invalid tier: ${tierNumber}` }, { status: 400 })
   }
 
-  const bookInput = { sessionId, childName, age, tier: tierNumber as 1 | 2 | 3 | 4 | 5, theme, pronouns, sidekick }
+  const bookInput = { sessionId, childName, age, tier: tierNumber as 1 | 2 | 3 | 4 | 5, theme, readMode: parsed.data.readMode ?? 'aloud', pronouns, sidekick }
 
   // ── PASS 1: Story Generation ──────────────────────────────────────────────
   let storyJSON
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
   // ── PASS 2: Image Generation — fire-and-forget so client gets UUID immediately ──
 console.log('[generate] Starting background image generation for', bookUuid)
 waitUntil(
-  generateImages(supabase, bookUuid, storyJSON, ideogramKey, usingByok)
+  generateImages(supabase, bookUuid, storyJSON, replicateKey, usingByok)
     .then(() => console.log('[generate] Image generation complete for', bookUuid))
     .catch(err => console.error('[generate] Background image generation failed:', err))
 )
@@ -186,8 +187,13 @@ waitUntil(
 return NextResponse.json({ uuid: bookUuid, status: 'generating' })
 }
 // ── Background image generation ───────────────────────────────────────────────
-// Runs after the HTTP response is sent. Processes images in batches of 3
-// to stay within Ideogram rate limits while still being ~3x faster than serial.
+// Runs after the HTTP response is sent.
+//
+// Phase 1: Generate character anchor image from character_description (1 call)
+// Phase 2: Generate per-page illustrations using anchor as subject reference
+//
+// Pages run in batches of 3 — Replicate handles concurrency well at this size.
+// Anchor serialises before batch loop so all pages share the same reference.
 const IMAGE_BATCH_SIZE = 3
 
 async function generateImages(
@@ -196,13 +202,31 @@ async function generateImages(
   bookUuid: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   storyJSON: any,
-  ideogramKey: string,
+  replicateKey: string,
   usingByok: boolean
 ): Promise<void> {
   const imageUrls: (string | null)[] = new Array(storyJSON.pages.length).fill(null)
   let authFailed = false
 
-  // Process in batches of IMAGE_BATCH_SIZE
+  // Fix seed per book so art style is consistent across all pages
+  const bookSeed = Math.floor(Math.random() * 2_147_483_647)
+
+  // ── Phase 1: Generate character anchor ─────────────────────────────────────
+  let anchorUrl: string
+  try {
+    console.log('[generate] Generating character anchor for', bookUuid)
+    anchorUrl = await generateCharacterAnchor(replicateKey, storyJSON.character_description)
+    console.log('[generate] Anchor ready:', anchorUrl)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    console.error('[generate] Anchor generation failed:', err)
+    if (message.includes('401')) {
+      await supabase.from('books').update({ status: 'failed' }).eq('uuid', bookUuid)
+    }
+    return
+  }
+
+  // ── Phase 2: Per-page generation ───────────────────────────────────────────
   for (let batchStart = 0; batchStart < storyJSON.pages.length; batchStart += IMAGE_BATCH_SIZE) {
     if (authFailed) break
 
@@ -216,16 +240,19 @@ async function generateImages(
           const i = batchStart + batchIndex
           if (authFailed) return
 
-          const prompt = buildImagePrompt(storyJSON.character_description, page.image_prompt)
-
-          let ideogramUrl: string
+          let replicateUrl: string
           try {
-            ideogramUrl = await callIdeogram(ideogramKey, prompt)
+            replicateUrl = await callConsistentCharacter(
+              replicateKey,
+              anchorUrl,
+              page.image_prompt,
+              bookSeed
+            )
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error'
-            console.error(`[generate] Ideogram failed for page ${page.page_number}:`, err)
+            console.error(`[generate] Replicate failed for page ${page.page_number}:`, err)
 
-            if (message.includes('401') || message.includes('Unauthorized') || message.includes('Invalid API key')) {
+            if (message.includes('401')) {
               authFailed = true
               await supabase
                 .from('books')
@@ -238,7 +265,7 @@ async function generateImages(
           // Upload to Supabase Storage
           let publicUrl: string
           try {
-            publicUrl = await uploadImage(ideogramUrl, bookUuid, page.page_number)
+            publicUrl = await uploadImage(replicateUrl, bookUuid, page.page_number)
           } catch (err) {
             console.error(`[generate] Storage upload failed for page ${page.page_number}:`, err)
             return

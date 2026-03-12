@@ -29,23 +29,33 @@ export function buildStoryPrompt(
   }
   const pronouns = pronounMap[input.pronouns] ?? pronounMap['they/them']
 
+  // Prose register — adjusts writing style based on how the book will be read
+  const proseRegister = input.readMode === 'independent'
+    ? `Write in an independent-reader register: strict adherence to sight word vocabulary, short confidence-building sentences, repetitive patterns that reward completion. Vocabulary must stay strictly within the Dolch/Fry list for this tier — no exceptions.`
+    : `Write in a read-aloud register: slightly richer prose, atmospheric descriptions, sentences that have satisfying rhythm when spoken aloud. Vocabulary may slightly exceed the child's decoding level since a caregiver is reading.`
+
+  const totalPages = tier.targetPages
+  const climaxPage = Math.round(totalPages * 0.85)   // ~85% through
+  const breakthroughPage = Math.round(totalPages * 0.65) // ~65% through
+  const midturnPage = Math.round(totalPages * 0.45)  // ~45% through
+
   const systemPrompt = `You are a master children's book author — think Mo Willems' humor, Pixar's emotional precision, and the addictive energy of the best kids' franchise shows (Paw Patrol, Bluey, Spider-Man). You write stories that children BEG to hear again.
 
 ## YOUR TASK
 
-Write a complete 10-page illustrated children's book. Return ONLY valid JSON — no prose, no explanation, no markdown fences — matching the exact schema specified below.
+Write a complete ${totalPages}-page illustrated children's book. Return ONLY valid JSON — no prose, no explanation, no markdown fences — matching the exact schema specified below.
 
 ## STORY STRUCTURE (NON-NEGOTIABLE)
 
-Every story follows this 10-page arc:
+Every story follows this arc across exactly ${totalPages} pages:
 
 - **Page 1:** Drop straight into the world. Establish ${input.childName} and ${input.sidekick ? `${input.sidekick}` : 'the setting'} in the FIRST sentence. No preamble, no "once upon a time." Show us who ${input.childName} is through a single action or moment — not description.
 - **Page 2:** The problem HITS. Something goes wrong, something is missing, someone needs help. Make it urgent and specific — not "something bad happened" but a concrete, visual crisis the reader can picture. The reader should feel "oh no!" out loud.
-- **Pages 3–4:** First attempt. ${input.childName} tries to solve it. It doesn't fully work, or creates a new complication. Each page ends on a moment that makes the reader NEED to turn the page — a cliffhanger, a reveal, an "uh oh."
-- **Pages 5–6:** Things get harder. A setback, a discovery, a twist. Raise the stakes.${input.sidekick ? ` ${input.sidekick} plays a key role here — not just tagging along, but contributing something only ${input.sidekick} can.` : ''} Show ${input.childName} doubting, then finding determination.
-- **Pages 7–8:** The breakthrough. ${input.childName} figures out the key insight or finds the courage to try something new. Build momentum toward the climax. The reader should be leaning forward.
-- **Page 9:** The climax. ${input.childName} does the brave, clever, or kind thing that saves the day. This is THEIR moment${input.sidekick ? ` — ${input.sidekick} supports but ${input.childName} acts` : ''}. Make it feel earned.
-- **Page 10:** Celebration and pride. Everyone cheers.${input.sidekick ? ` ${input.sidekick} says something funny or heartfelt.` : ''} ${input.childName} feels proud — not because someone told ${pronouns.object}, but because ${pronouns.subject} KNOWS what ${pronouns.subject} did. End on warmth, not a moral lesson.
+- **Pages 3–${midturnPage}:** First attempt. ${input.childName} tries to solve it. It doesn't fully work, or creates a new complication. Each page ends on a moment that makes the reader NEED to turn the page — a cliffhanger, a reveal, an "uh oh."
+- **Pages ${midturnPage + 1}–${breakthroughPage}:** Things get harder. A setback, a discovery, a twist. Raise the stakes.${input.sidekick ? ` ${input.sidekick} plays a key role here — not just tagging along, but contributing something only ${input.sidekick} can.` : ''} Show ${input.childName} doubting, then finding determination.
+- **Pages ${breakthroughPage + 1}–${climaxPage - 1}:** The breakthrough. ${input.childName} figures out the key insight or finds the courage to try something new. Build momentum toward the climax. The reader should be leaning forward.
+- **Page ${climaxPage}:** The climax. ${input.childName} does the brave, clever, or kind thing that saves the day. This is THEIR moment${input.sidekick ? ` — ${input.sidekick} supports but ${input.childName} acts` : ''}. Make it feel earned.
+- **Pages ${climaxPage + 1}–${totalPages}:** Celebration and pride. Everyone cheers.${input.sidekick ? ` ${input.sidekick} says something funny or heartfelt.` : ''} ${input.childName} feels proud — not because someone told ${pronouns.object}, but because ${pronouns.subject} KNOWS what ${pronouns.subject} did. End on warmth, not a moral lesson.
 
 ## VOICE & TONE
 
@@ -56,44 +66,48 @@ Every story follows this 10-page arc:
 - Age-appropriate but never condescending. Kids are smart. Use real vocabulary — don't say "big" when you can say "enormous" or "tremendous." Let context teach the word.
 - Vary sentence rhythm. Follow a long descriptive sentence with a short punchy one. Build tension with fragments. Release it with exclamations.
 
+## READING MODE
+
+${proseRegister}
+
 ## LEXILE TIER CONSTRAINTS (CRITICAL — ENFORCED ON EVERY PAGE)
 
-This story is written for the **${tier.name} Reader** tier (${tier.lexileRange}, ${tier.targetAge}).
+This story is written for the **${tier.name}** tier (${tier.lexileRange}, ${tier.targetAge}).
 
-**Word count per page:** ${tier.wordsPerPage}
+**Page count:** Exactly ${totalPages} pages (${tier.pageRange})
+**Total word target:** ${tier.totalWordRange}
+**Words per page:** ${tier.wordsPerPage}
 **Sentence rules:** ${tier.sentenceRules}
 
 You MUST enforce these constraints on EVERY page. Violating them will cause the story to be rejected.
 
 Tier-specific guidance:
 ${tier.tier === 1 ? `
-- Use only the simplest, most common English words (sight words: the, a, is, it, big, red, go, see, look, come, can, we, my, up, down, in, out).
-- Every sentence follows Subject + Verb or Subject + Verb + Object. No conjunctions, no subordinate clauses.
-- Maximum sentence length: 8 words.
-- Use onomatopoeia and repetition — children at this age love predictable patterns.
+- Use ONLY the most common English sight words (the, a, is, it, big, red, go, see, look, come, can, we, my, up, down, in, out) and simple CVC words (cat, dog, run, big, hop).
+- Every sentence: Subject + Verb or Subject + Verb + Object only. Maximum 6 words per sentence.
+- HIGH REPETITION required — the same sentence pattern repeats with one word changed: "I see a cat. I see a dog. I see a frog."
+- Use onomatopoeia freely: ZOOM! POP! CRASH! SPLAT!
 - Even at this level, the STORY ARC still applies. Simple words can tell a thrilling story.
 - Example page: "Sam ran fast. ZOOM! The ball was gone. 'Oh no!' said Sam."
 ` : ''}${tier.tier === 2 ? `
-- Use common sight words and simple phonics words. Avoid multi-syllable uncommon words.
-- Compound sentences are allowed (joined with "and" or "but"). One idea per sentence.
-- Maximum sentence length: 12 words.
-- Introduce simple emotion words (happy, scared, excited, surprised).
-- Use dialogue — kids at this level love characters who TALK.
-- Example page: "'Look!' said Maya. She pointed at the sky. A big red bird flew down, and it landed right on her arm!"
+- VOCABULARY: Dolch/Fry sight words as the foundation. CVC words (cat, dog, run, big). 80-90% one-syllable words. NO multi-syllable words except ${input.childName}'s name.
+- Every sentence max 10 words. Sentences per page: 1-2.
+- Simple present tense or present progressive only ("The dog runs." / "The dog is running.").
+- Use onomatopoeia and repetition — repeating patterns with one word changed each time.
+- NO dialogue yet — action narration only.
+- Example page: "${input.childName} ran to the tree. A big red bird sat up top. 'Oh! A bird!' said ${input.childName}."
 ` : ''}${tier.tier === 3 ? `
-- Use varied sentence structures: simple, compound, and short complex sentences.
-- Include descriptive adjectives and simple adverbs.
-- Introduce some grade-appropriate vocabulary (curious, discover, whispered, enormous).
-- Build a clear cause-and-effect structure across the story.
-- Balance action with moments of feeling — let the character react internally.
-- Example page: "Maya crept quietly through the tall grass, listening for any sound. Somewhere nearby, she could hear a tiny whimper. Her heart beat faster. 'I'm coming,' she whispered."
+- VOCABULARY: All sight words + common blends (th, sh, ch, br, st, tr). CVC and CVCE words (cake, ride, home). Some two-syllable words (into, little, happy, running, looking). 65-75% one-syllable words.
+- Sentences: 5-10 words each. 2-4 sentences per page. Past tense OK. Contractions OK (don't, can't, it's).
+- Dialogue ENCOURAGED — simple back-and-forth between 2 characters. Kids at this level love characters who TALK.
+- ONE "stretch" word per spread at most, decodable from context + illustration.
+- Example page: "'Look!' said ${input.childName}. ${input.sidekick ? input.sidekick : 'The bird'} looked up. A big fish jumped into the air! It landed with a SPLASH."
 ` : ''}${tier.tier === 4 ? `
-- Use complex sentence structures with subordinate clauses (when, because, although, while).
-- Include richer vocabulary: synonyms, multi-syllable words, figurative expressions.
-- Show character internal thoughts and emotions, not just actions.
-- The story should have a clear three-act structure: setup, rising action, resolution.
-- Use tension and pacing deliberately — slow down for emotional moments, speed up for action.
-- Example page: "Although ${input.childName} had searched for hours, the street was completely empty. The silence pressed in like a heavy blanket. Then — a flash of gold, just around the corner."
+- Use varied sentence structures: simple, compound, and short complex sentences (when, because, but).
+- Include descriptive adjectives and simple adverbs. Grade-appropriate vocabulary OK (curious, discover, whispered, enormous).
+- Build a clear cause-and-effect structure across the story. Show character emotions through action.
+- Balance action with moments of feeling — let the character react internally.
+- Example page: "${input.childName} crept quietly through the tall grass, listening for any sound. Somewhere nearby, ${pronouns.subject} could hear a tiny whimper. ${pronouns.possessive.charAt(0).toUpperCase() + pronouns.possessive.slice(1)} heart beat faster. 'I'm coming,' ${pronouns.subject} whispered."
 ` : ''}${tier.tier === 5 ? `
 - Use sophisticated sentence variety: complex, compound-complex, and varied rhythms.
 - Include literary devices: metaphor, simile, personification, foreshadowing.
@@ -112,7 +126,7 @@ ${tier.tier === 1 ? `
 
 ## CHARACTER DESCRIPTION (CRITICAL FOR VISUAL CONSISTENCY)
 
-The JSON you return includes a \`character_description\` field. This is the single most important element for visual consistency across all 10 illustrations.
+The JSON you return includes a \`character_description\` field. This is the single most important element for visual consistency across all ${totalPages} illustrations.
 
 Write it as a precise, concrete visual description (3-5 sentences) covering:
 - Hair: color, length, and style
@@ -151,7 +165,7 @@ Return ONLY this JSON structure. No markdown. No explanation. No code fences. Ra
       "text": "string — story text for this page, strictly obeying tier word/sentence constraints",
       "image_prompt": "string — cinematographic scene description for illustration (no character appearance — appended automatically)"
     },
-    ... (exactly 10 page objects, page_number 1 through 10)
+    ... (exactly ${totalPages} page objects, page_number 1 through ${totalPages})
   ]
 }
 
@@ -164,7 +178,8 @@ REMINDER: Return ONLY valid JSON. Any prose before or after the JSON will cause 
 - **Pronouns:** ${input.pronouns} (use ${pronouns.subject}/${pronouns.object}/${pronouns.possessive})
 - **Theme:** ${input.theme}${input.sidekick ? `
 - **Sidekick:** ${input.sidekick} — a real character throughout, not just a mention. Give them personality, dialogue, and a role in solving the problem.` : ''}
-- **Reading level:** ${tier.name} Reader (${tier.lexileRange}) — STRICTLY enforce ${tier.wordsPerPage} per page
+- **Reading level:** ${tier.name} (${tier.lexileRange}) — STRICTLY enforce ${tier.wordsPerPage} per page, ${tier.totalWordRange}
+- **Page count:** Exactly ${totalPages} pages (${tier.pageRange})
 
 Make ${input.childName} the HERO. Problem by page 2. Franchise energy — catchphrases, exclamations, cliffhanger page turns. Triumphant ending where ${input.childName} saves the day and feels proud.
 
@@ -223,7 +238,7 @@ export async function generateStory(
     const rawText = await callClaude(apiKey, systemPrompt, userPrompt)
     const cleaned = stripMarkdownFences(rawText)
     const parsed = JSON.parse(cleaned)
-    return validateStoryJSON(parsed)
+    return validateStoryJSON(parsed, tier.targetPages)
   } catch (err) {
     // One retry on failure
     console.warn('First Claude attempt failed, retrying...', err)
@@ -234,7 +249,7 @@ export async function generateStory(
     const rawText = await callClaude(apiKey, systemPrompt, userPrompt)
     const cleaned = stripMarkdownFences(rawText)
     const parsed = JSON.parse(cleaned)
-    return validateStoryJSON(parsed)
+    return validateStoryJSON(parsed, tier.targetPages)
   } catch (err) {
     throw new StoryGenerationError('Story generation failed after 2 attempts', err)
   }
