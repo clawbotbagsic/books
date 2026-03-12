@@ -20,7 +20,7 @@ export class ImageGenerationError extends Error {
 // ── Constants ────────────────────────────────────────────────────────────────
 
 export const ART_STYLE_PREFIX =
-  "vintage Disney-style cartoon illustration, smooth hand-drawn lines, warm shading, 1940s-1950s Disney animation style, expressive character design, warm cream background"
+  "children's picture book illustration, vibrant saturated colors, rich detailed background with environment and scenery, full illustrated scene with multiple visual elements, expressive cartoon characters, bold clean outlines, bright cheerful colors, professional picture book quality"
 
 const REPLICATE_API_BASE = 'https://api.replicate.com/v1'
 
@@ -40,10 +40,13 @@ export function getReplicateKey(req: Request): string {
 
 // ── Prompt builders ──────────────────────────────────────────────────────────
 
-// Per-page illustration prompt: art style + character description + scene
+// Per-page illustration prompt: art style + scene + character description
+// Scene comes before character so FLUX builds the full environment first,
+// then places the character into it — rather than rendering the character
+// and tacking a background on after.
 export function buildPagePrompt(pageImagePrompt: string, characterDescription?: string): string {
   if (characterDescription) {
-    return `${ART_STYLE_PREFIX}. ${characterDescription}. ${pageImagePrompt}`
+    return `${ART_STYLE_PREFIX}. ${pageImagePrompt}. ${characterDescription}`
   }
   return `${ART_STYLE_PREFIX}. ${pageImagePrompt}`
 }
@@ -193,8 +196,10 @@ export async function generatePageImage(
     if (response.status === 401) {
       throw new ImageGenerationError('401: Invalid or missing Replicate API token')
     }
-    if (response.status === 429 && attempt < 4) {
-      const delay = Math.pow(2, attempt) * 3000 // 3s, 6s, 12s, 24s
+    if (response.status === 429 && attempt < 3) {
+      // Rate limit resets in ~10s per Replicate's error message.
+      // Start at 11s so every retry lands after the reset window.
+      const delay = Math.pow(2, attempt) * 11_000 // 11s, 22s, 44s
       console.warn(`[replicate] 429 rate limit on attempt ${attempt + 1}, retrying in ${delay}ms`)
       await new Promise(r => setTimeout(r, delay))
       return generatePageImage(apiKey, characterDescription, pageImagePrompt, seed, attempt + 1)
