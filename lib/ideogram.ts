@@ -26,17 +26,14 @@ export function getIdeogramKey(req: Request): string {
   return key
 }
 
-export const ART_STYLE_ANCHOR =
-  'Vintage Disney animation style, smooth hand-drawn lines, warm soft shading, 1950s Disney storybook illustration, rich saturated colors, expressive character faces, painterly backgrounds with soft focus depth, full scene composition, children\'s picture book'
-
-export const NEGATIVE_PROMPT =
-  'photorealistic, 3D render, CGI, dark, scary, violent, text, words, letters, watermark, signature, logo, blurry, low quality, anime, manga, pixel art, abstract'
+export const ART_STYLE_PREFIX =
+  "children's book illustration, watercolor and colored pencil, warm colors, soft edges, white background"
 
 export function buildImagePrompt(
-  sceneDescription: string,
-  characterDescription: string
+  characterDescription: string,
+  pageImagePrompt: string
 ): string {
-  return `${ART_STYLE_ANCHOR}.\n\n${sceneDescription}\n\nCharacter details: ${characterDescription}\n\nConsistent character appearance across all pages — same face, same hair, same build, same outfit.`
+  return `${ART_STYLE_PREFIX}. ${characterDescription} ${pageImagePrompt}`
 }
 
 export async function callIdeogram(
@@ -54,10 +51,8 @@ export async function callIdeogram(
       body: JSON.stringify({
         image_request: {
           prompt,
-          negative_prompt: NEGATIVE_PROMPT,
           aspect_ratio: 'ASPECT_4_3',
           model: 'V_2',
-          style_type: 'DESIGN',
           magic_prompt_option: 'OFF',
         },
       }),

@@ -3,7 +3,7 @@
 
 import { getDefaultTier, getTierByNumber, nudgeTier, LEXILE_TIERS } from '../lib/lexile'
 import { buildStoryPrompt } from '../lib/anthropic'
-import { buildImagePrompt, ART_STYLE_ANCHOR } from '../lib/ideogram'
+import { buildImagePrompt, ART_STYLE_PREFIX } from '../lib/ideogram'
 import { validateStoryJSON } from '../lib/bookSchema'
 import type { BookFormInput, StoryJSON } from '../types/index'
 
@@ -196,11 +196,11 @@ async function runTest(label: string, input: BookFormInput) {
 
   // 5. Build image prompts for pages 1 and 10
   section('IMAGE PROMPTS')
-  const imgPrompt1 = buildImagePrompt(mockStory.pages[0].image_prompt, mockStory.character_description)
-  const imgPrompt10 = buildImagePrompt(mockStory.pages[9].image_prompt, mockStory.character_description)
+  const imgPrompt1 = buildImagePrompt(mockStory.character_description, mockStory.pages[0].image_prompt)
+  const imgPrompt10 = buildImagePrompt(mockStory.character_description, mockStory.pages[9].image_prompt)
 
-  assert(imgPrompt1.includes(ART_STYLE_ANCHOR), 'page 1 image prompt includes art style anchor')
-  assert(imgPrompt10.includes(ART_STYLE_ANCHOR), 'page 10 image prompt includes art style anchor')
+  assert(imgPrompt1.includes(ART_STYLE_PREFIX), 'page 1 image prompt includes art style prefix')
+  assert(imgPrompt10.includes(ART_STYLE_PREFIX), 'page 10 image prompt includes art style prefix')
   assert(imgPrompt1.includes(mockStory.character_description), 'page 1 image prompt includes character description')
   assert(imgPrompt10.includes(mockStory.character_description), 'page 10 image prompt includes character description')
 
@@ -338,9 +338,9 @@ function runLexileUtilityTests() {
     console.log(`  Tier ${t.tier}: ${t.name} | ${t.lexileRange} | ${t.targetAge} | ${t.wordsPerPage}`)
   })
 
-  section('ART_STYLE_ANCHOR')
-  assert(ART_STYLE_ANCHOR.length > 0, 'ART_STYLE_ANCHOR is non-empty')
-  console.log(' ', ART_STYLE_ANCHOR)
+  section('ART_STYLE_PREFIX')
+  assert(ART_STYLE_PREFIX.length > 0, 'ART_STYLE_PREFIX is non-empty')
+  console.log(' ', ART_STYLE_PREFIX)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

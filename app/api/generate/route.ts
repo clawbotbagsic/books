@@ -216,7 +216,7 @@ async function generateImages(
           const i = batchStart + batchIndex
           if (authFailed) return
 
-          const prompt = buildImagePrompt(page.image_prompt, storyJSON.character_description)
+          const prompt = buildImagePrompt(storyJSON.character_description, page.image_prompt)
 
           let ideogramUrl: string
           try {
