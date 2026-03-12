@@ -16,7 +16,7 @@ export class ImageGenerationError extends Error {
 // ── Constants ────────────────────────────────────────────────────────────────
 
 export const ART_STYLE_PREFIX =
-  "children's book illustration, watercolor and colored pencil, warm colors, soft edges, white background"
+  "vintage Disney-style cartoon illustration, smooth hand-drawn lines, warm shading, 1940s-1950s Disney animation style, expressive character design, warm cream background"
 
 const REPLICATE_API_BASE = 'https://api.replicate.com/v1'
 
@@ -24,11 +24,12 @@ const REPLICATE_API_BASE = 'https://api.replicate.com/v1'
 // $0.039/run, open source: github.com/fofr/cog-consistent-character
 // Community model: must use POST /v1/predictions with version in body (not /models/ endpoint)
 const CONSISTENT_CHARACTER_VERSION =
-  '6d07be932f1a1dcab88b599a25863a98e50768597ab4ed3b6c099ef0f707dc05'
+  '9c77a3c2f884193fcee4d89645f02a0b9def9434f9e03cb98460456b831c8772'
 
-// FLUX Schnell for anchor generation — fast, cheap (~$0.003–0.025), good quality
+// FLUX Dev for anchor generation — higher quality than Schnell, better linework
 // Used to produce the character reference illustration before per-page generation
-const FLUX_SCHNELL_MODEL = 'black-forest-labs/flux-schnell'
+// Cost: ~$0.025/run vs Schnell's ~$0.003 — worth it since anchor drives all 14 pages
+const FLUX_DEV_MODEL = 'black-forest-labs/flux-dev'
 
 // ── Key helper ───────────────────────────────────────────────────────────────
 
@@ -45,7 +46,7 @@ export function buildPagePrompt(pageImagePrompt: string): string {
 }
 
 export function buildAnchorPrompt(characterDescription: string): string {
-  return `${ART_STYLE_PREFIX}. Character reference sheet. ${characterDescription}. Full body, front view, standing, arms at sides, hands visible, neutral expression, plain white background, illustration.`
+  return `${ART_STYLE_PREFIX}. Character reference sheet showing front view, 3/4 view, and side view of the same character, plus facial expressions (happy, surprised, sad) in the top right corner. ${characterDescription}. Full body visible in each view, arms at sides, hands visible, plain cream background. Classic Disney character sheet layout.`
 }
 
 // ── Replicate polling helper ─────────────────────────────────────────────────
@@ -83,7 +84,7 @@ export async function generateCharacterAnchor(
 
   let response: Response
   try {
-    response = await fetch(`${REPLICATE_API_BASE}/models/${FLUX_SCHNELL_MODEL}/predictions`, {
+    response = await fetch(`${REPLICATE_API_BASE}/models/${FLUX_DEV_MODEL}/predictions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -93,10 +94,11 @@ export async function generateCharacterAnchor(
       body: JSON.stringify({
         input: {
           prompt,
-          num_outputs: 1,
+          num_inference_steps: 28,
+          guidance: 3.5,
           aspect_ratio: '1:1',
           output_format: 'webp',
-          output_quality: 85,
+          output_quality: 90,
         },
       }),
     })
