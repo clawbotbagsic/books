@@ -45,7 +45,7 @@ export function buildImagePrompt(
   childAge: number
 ): string {
   const characterAnchor = buildCharacterAnchor(childAge)
-  return `${sceneDescription}\n\n${characterAnchor}\n\n${characterDescription}\n\n${ART_STYLE_ANCHOR}`
+  return `${ART_STYLE_ANCHOR}.\n\n${sceneDescription}\n\n${characterAnchor}\n\n${characterDescription}`
 }
 
 export async function callIdeogram(
@@ -66,6 +66,7 @@ export async function callIdeogram(
           negative_prompt: NEGATIVE_PROMPT,
           aspect_ratio: 'ASPECT_4_3',
           model: 'V_2',
+          style_type: 'ILLUSTRATION',
           magic_prompt_option: 'OFF',
         },
       }),
