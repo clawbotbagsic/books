@@ -192,7 +192,7 @@ export async function callClaude(
   let message
   try {
     message = await client.messages.create({
-      model: 'claude-opus-4-5-20251101',
+      model: 'claude-opus-4-6',
       max_tokens: 8192,
       system: systemPrompt,
       messages: [

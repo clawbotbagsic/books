@@ -75,7 +75,7 @@ The 5 Lexile Tiers:
 
 Age-to-tier default mapping: Age 3-4 → Tier 1, Age 5-6 → Tier 2, Age 7-8 → Tier 3, Age 9-10 → Tier 4, Age 11-12 → Tier 5. Parent can nudge up or down one tier before generating.
 
-Fixed art style: "children's book illustration, watercolor and colored pencil, warm colors, soft edges, white background" — prefixed to every Ideogram prompt.
+Fixed art style: "Digital illustration, warm saturated colors, soft diffused lighting, children's picture book style, Studio Ghibli-inspired watercolor textures, slightly rounded character proportions, expressive faces, rich environmental detail, full scene composition" — appended to every Ideogram prompt via `ART_STYLE_ANCHOR`.
 
 ---
 
@@ -221,7 +221,7 @@ The 5-tier Lexile system makes this educationally defensible, not just cute. Par
 | 2026-03-11 | QA acceptance: all 10 pages have text + image, child's name in story, clear story arc | No automated Lexile validation in Phase 1. System prompt is the quality gate. |
 | 2026-03-11 | Vercel Pro with maxDuration = 300 on all API routes | Full generation takes 60-120s. Pro tier eliminates timeout issues. No need for split client-driven architecture. |
 | 2026-03-11 | Optional pet/sidekick field on creation form | Kids love animal companions. Makes stories more engaging. Optional to keep the form simple. |
-| 2026-03-12 | Story model: Sonnet → Opus | Richer narratives, better franchise energy, worth the cost increase. |
+| 2026-03-12 | Story model: Sonnet → Opus 4.6 | Better narratives, franchise energy, same $5/$25 pricing as Opus 4.5. Worth the upgrade. |
 | 2026-03-12 | Reader layout: side-by-side → full-bleed with text overlay | Picture book standard. Image IS the page, text floats on a gradient strip. |
 | 2026-03-12 | Story prompt: added page arc, franchise voice, catchphrases, cinematographic image prompts | Storytelling quality was generic. New prompt produces TV-quality story arcs. |
 | 2026-03-12 | Character consistency: locked anchor (Chinese boy, red hoodie, blue sneakers) + art style injected on every image | Ideogram has no memory across pages. Hardcoded anchor + style string is the consistency cheat code. |
