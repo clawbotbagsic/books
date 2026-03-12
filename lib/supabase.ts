@@ -19,5 +19,12 @@ export function getSupabase(): SupabaseClient {
       autoRefreshToken: false,
       persistSession: false,
     },
+    global: {
+      // Next.js patches globalThis.fetch to enable its Data Cache.
+      // Supabase uses that patched fetch internally, so all PostgREST reads
+      // get cached across requests unless we explicitly opt out here.
+      fetch: (url: RequestInfo | URL, init?: RequestInit) =>
+        fetch(url, { ...init, cache: 'no-store' }),
+    },
   })
 }
