@@ -227,12 +227,12 @@ return NextResponse.json({ uuid: bookUuid, status: 'generating' })
 // ── Background image generation ───────────────────────────────────────────────
 // Runs after the HTTP response is sent.
 //
-// Phase 1: Generate character anchor image from character_description (1 call)
-// Phase 2: Generate per-page illustrations using anchor as subject reference
-//
-// sdxl-based/consistent-character has ~10 concurrent prediction limit per account.
-// Batch of 5 avoids hitting it — 3 batches × ~25s = ~75s total, well within limits.
-const IMAGE_BATCH_SIZE = 5
+// Sequential generation — one page at a time with a gap between requests.
+// Replicate free-tier accounts are rate-limited to burst=1, 6 req/min.
+// Sending concurrent requests causes immediate 429s on all but the first.
+// Sequential with ~11s gap stays comfortably within 6/min.
+// 14 pages × ~12s each ≈ ~2.5 min total — well within the 300s maxDuration.
+const REPLICATE_REQUEST_GAP_MS = 11_000  // ~11s between requests → ~5.5 req/min
 
 async function generateImages(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -252,69 +252,65 @@ async function generateImages(
 
   console.log('[generate] Using character description for', bookUuid)
 
-  // ── Phase 2: Per-page generation ───────────────────────────────────────────
-  for (let batchStart = 0; batchStart < storyJSON.pages.length; batchStart += IMAGE_BATCH_SIZE) {
+  // ── Per-page generation (sequential) ───────────────────────────────────────
+  for (let i = 0; i < storyJSON.pages.length; i++) {
     if (authFailed) break
 
-    const batchEnd = Math.min(batchStart + IMAGE_BATCH_SIZE, storyJSON.pages.length)
-    const batch = storyJSON.pages.slice(batchStart, batchEnd)
+    // Add gap between requests to respect Replicate rate limit (6/min, burst=1)
+    // Skip delay on the very first page
+    if (i > 0) {
+      await new Promise(r => setTimeout(r, REPLICATE_REQUEST_GAP_MS))
+    }
 
-    const promises = batch.map(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (page: any, batchIndex: number) =>
-        (async () => {
-          const i = batchStart + batchIndex
-          if (authFailed) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const page = storyJSON.pages[i] as any
 
-          let replicateUrl: string
-          try {
-            replicateUrl = await generatePageImage(
-              replicateKey,
-              characterDescription,
-              page.image_prompt,
-              bookSeed
-            )
-          } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Unknown error'
-            console.error(`[generate] Replicate failed for page ${page.page_number}:`, err)
+    let replicateUrl: string
+    try {
+      replicateUrl = await generatePageImage(
+        replicateKey,
+        characterDescription,
+        page.image_prompt,
+        bookSeed
+      )
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      console.error(`[generate] Replicate failed for page ${page.page_number}:`, err)
 
-            if (message.includes('401')) {
-              authFailed = true
-              await supabase
-                .from('books')
-                .update({ status: 'failed' })
-                .eq('uuid', bookUuid)
-            }
-            return
-          }
+      if (message.includes('401')) {
+        authFailed = true
+        await supabase
+          .from('books')
+          .update({ status: 'failed' })
+          .eq('uuid', bookUuid)
+      }
+      // Skip this page on failure (other pages can still succeed)
+      continue
+    }
 
-          // Upload to Supabase Storage
-          let publicUrl: string
-          try {
-            publicUrl = await uploadImage(replicateUrl, bookUuid, page.page_number)
-          } catch (err) {
-            console.error(`[generate] Storage upload failed for page ${page.page_number}:`, err)
-            return
-          }
+    // Upload to Supabase Storage
+    let publicUrl: string
+    try {
+      publicUrl = await uploadImage(replicateUrl, bookUuid, page.page_number)
+    } catch (err) {
+      console.error(`[generate] Storage upload failed for page ${page.page_number}:`, err)
+      continue
+    }
 
-          imageUrls[i] = publicUrl
+    imageUrls[i] = publicUrl
 
-          // Update the book record so poller sees live progress
-          try {
-            await supabase
-              .from('books')
-              .update({
-                image_urls: [...imageUrls],
-                pages_complete: imageUrls.filter(Boolean).length,
-              })
-              .eq('uuid', bookUuid)
-          } catch (err) {
-            console.error(`[generate] Failed to update book after page ${page.page_number}:`, err)
-          }
-        })()
-    )
-
-    await Promise.allSettled(promises)
+    // Update the book record so poller sees live progress
+    try {
+      await supabase
+        .from('books')
+        .update({
+          image_urls: [...imageUrls],
+          pages_complete: imageUrls.filter(Boolean).length,
+        })
+        .eq('uuid', bookUuid)
+    } catch (err) {
+      console.error(`[generate] Failed to update book after page ${page.page_number}:`, err)
+    }
   }
 
   if (authFailed) return
